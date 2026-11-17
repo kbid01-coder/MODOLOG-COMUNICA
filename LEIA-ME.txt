@@ -1,29 +1,7 @@
-MODOLOG COMUNICA — V1.0 (BASE INICIAL)
+MODOLOG COMUNICA V1.5.6 — ZIP COMPLETO
 
-FUNCIONA NESTA VERSÃO:
-- Login com credenciais existentes do Supabase Auth, com autorização via modolog_profiles.
-- Cadastro de usuário exclusivo do COMUNICA pelo ADM (em comunica_users, sem perfil Checklist).
-- Chat de texto em canais (atualização a cada 5 segundos).
-- Canal geral e criação de canais pelo ADM.
-- Comunicados publicados pelo ADM.
-- PWA básico para navegador, Android e iPhone.
+Atualização: correção experimental da reprodução WebRTC Android -> iPhone independente do diagnóstico; verificação periódica da rota de áudio; confirmação de recepção via sinalização para evitar repetição da gravação quando há áudio ao vivo.
 
-AINDA NÃO IMPLEMENTADO:
-- PTT de áudio; recepção com tela bloqueada; versão Android nativa/iOS nativa.
-- Conversas individuais, gestão de participantes por canal, anexos, notificações push e leitura de comunicados.
-- Recuperação/renovação automática de sessão e edição/exclusão de usuários.
+Instalação: substituir os arquivos do repositório pelo conteúdo deste ZIP, mantendo a estrutura. Publicar no Cloudflare Pages. Não é necessário SQL novo.
 
-INSTALAÇÃO:
-1. Faça backup do Supabase e execute SQL_COMUNICA_V1.sql no MESMO projeto usado pelo Checklist.
-2. Publique os arquivos desta pasta em um NOVO projeto Cloudflare Pages (não substitua o Checklist).
-3. Nas variáveis do Cloudflare configure SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY e SUPABASE_ANON_KEY.
-   A SERVICE_ROLE_KEY é segredo: configure SOMENTE no Cloudflare, nunca no HTML ou repositório público.
-4. Faça o primeiro login com usuário ADM MASTER ou ADM existente e ativo em modolog_profiles.
-5. Cadastre usuários exclusivos pelo menu Usuários.
-
-ATENÇÃO À SEGURANÇA:
-O novo app não altera permissões de outros aplicativos. Entretanto, antes de criar contas exclusivas,
-verifique que os outros apps realmente exigem um perfil autorizado e que suas políticas RLS
-não concedem acesso apenas por estar autenticado no mesmo Supabase.
-Canais privados ainda não possuem tela para adicionar membros, portanto apenas ADM pode vê-los.
-Versão inicial de desenvolvimento: testar em ambiente de homologação antes de uso operacional.
+ATENÇÃO: teste em Android e iPhone; confirmação de recepção de pacotes não garante que o som foi audível. Se não houver confirmação, a gravação continua sendo enviada ao soltar. Não funciona com tela bloqueada. Guarde a versão anterior para reversão.
