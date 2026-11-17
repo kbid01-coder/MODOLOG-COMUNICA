@@ -1,0 +1,14 @@
+MODOLOG COMUNICA V1.1 — ATUALIZAÇÃO INCREMENTAL
+
+Arquivos para substituir no projeto Cloudflare Pages:
+- index.html
+- functions/api.js
+- sw.js
+
+Mudanças:
+- Removida a seção Comunicados, seu formulário e suas consultas periódicas.
+- Removidas da API as ações de consultar e publicar comunicados.
+- Mantidos chat, canais, usuários exclusivos, login e tela PTT (ainda não funcional).
+- Nenhum SQL é necessário. A tabela antiga comunica_announcements e seus registros não são excluídos, para evitar perda de dados.
+
+IMPORTANTE: o ZIP é incremental. Mescle estes arquivos com o repositório existente, preservando ícones, manifest e demais arquivos. Em deploy por upload direto, envie o projeto completo já mesclado; não substitua a publicação inteira apenas por este ZIP.
