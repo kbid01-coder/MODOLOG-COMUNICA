@@ -1,9 +1,7 @@
-MODOLOG COMUNICA V1.6.0 — ZIP COMPLETO
+MODOLOG COMUNICA V1.6.1 — ZIP COMPLETO
 
-IMPORTANTE: executar SQL_COMUNICA_V1_6.sql no Supabase antes de publicar esta versão.
+Corrigida a incompatibilidade entre sessão legada e sessão persistente na API rtc_poll e rtc_signal. As mensagens WebRTC agora usam o ID do canal como sessão, inclusive quando chegam identificadores antigos.
 
-Novidade: conexão WebRTC antecipada ao ativar recepção, presença dos aparelhos por canal, conexão persistente entre transmissões e envio do microfone por replaceTrack, sem renegociar SDP ao pressionar FALAR. Nenhuma gravação de segurança.
+Instalação: substitua os arquivos no GitHub, mantendo a estrutura. O SQL_COMUNICA_V1_6.sql precisa ter sido executado uma vez no Supabase. Não é necessário repetir o SQL se já foi executado com sucesso.
 
-Instalação: substituir todos os arquivos no GitHub mantendo a pasta functions; aguardar Cloudflare Pages.
-
-Testar em dois aparelhos com recepção ativada, aguardar alguns segundos para conexão antecipada e então falar. A velocidade depende da rede e do navegador. V1.5.9 permanece como versão estável para rollback.
+Sem gravação de segurança. Testar áudio Android/iPhone em ambos os sentidos.

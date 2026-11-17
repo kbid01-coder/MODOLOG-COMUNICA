@@ -52,21 +52,21 @@ try{
   await member(b.channel_id);
   const lease=String(b.session||''),target=String(b.to||''),kind=String(b.kind||'');
   if(!/^[0-9a-f-]{36}$/i.test(lease)||!/^[0-9a-f-]{36}$/i.test(target)||!['join','offer','answer','ice'].includes(kind))throw Error('Sinalização inválida');
-  if(lease!==b.channel_id)throw Error('Sessão WebRTC inválida');
+  if(!/^[0-9a-f-]{36}$/i.test(String(b.channel_id||'')))throw Error('Canal WebRTC inválido');
   if(target===p.id)throw Error('Destino inválido');
   const cutoff=new Date(Date.now()-12000).toISOString();
   const rows=await db('/rest/v1/comunica_rtc_presence?channel_id=eq.'+encodeURIComponent(b.channel_id)+'&user_id=eq.'+encodeURIComponent(target)+'&last_seen=gt.'+encodeURIComponent(cutoff)+'&select=user_id');
   if(!rows.length)throw Error('Aparelho não está ativo no canal');
   const payload=b.payload||{};
   if(JSON.stringify(payload).length>12000)throw Error('Sinal muito grande');
-  await db('/rest/v1/comunica_rtc_signals','POST',{channel_id:b.channel_id,session_id:lease,from_user:p.id,to_user:target,kind,payload});
+  await db('/rest/v1/comunica_rtc_signals','POST',{channel_id:b.channel_id,session_id:b.channel_id,from_user:p.id,to_user:target,kind,payload});
   return json({ok:true});
  }
  if(action==='rtc_poll'){
   await member(b.channel_id);
   const lease=String(b.session||''),since=Number(b.since||0);
-  if(lease!==b.channel_id||!Number.isSafeInteger(since)||since<0)throw Error('Consulta inválida');
-  const rows=await db('/rest/v1/comunica_rtc_signals?channel_id=eq.'+encodeURIComponent(b.channel_id)+'&session_id=eq.'+lease+'&to_user=eq.'+encodeURIComponent(p.id)+'&id=gt.'+since+'&created_at=gt.'+encodeURIComponent(new Date(Date.now()-20000).toISOString())+'&select=id,from_user,kind,payload&order=id.asc&limit=100');
+  if(!/^[0-9a-f-]{36}$/i.test(String(b.channel_id||''))||!Number.isSafeInteger(since)||since<0)throw Error('Consulta inválida');
+  const rows=await db('/rest/v1/comunica_rtc_signals?channel_id=eq.'+encodeURIComponent(b.channel_id)+'&session_id=eq.'+encodeURIComponent(b.channel_id)+'&to_user=eq.'+encodeURIComponent(p.id)+'&id=gt.'+since+'&created_at=gt.'+encodeURIComponent(new Date(Date.now()-20000).toISOString())+'&select=id,from_user,kind,payload&order=id.asc&limit=100');
   return json({items:rows});
  }
  if(action==='voice_list'){await member(b.channel_id);const rows=await db('/rest/v1/comunica_voice?channel_id=eq.'+encodeURIComponent(b.channel_id)+'&select=id,user_id,sender,created_at&order=id.desc&limit=25');return json({items:rows.reverse()})}
