@@ -1,20 +1,10 @@
-MODOLOG COMUNICA V1.7.0 — PACOTE COMPLETO
+MODOLOG COMUNICA V1.7.1 — PACOTE COMPLETO
 
-Base: V1.6.2 validada em iPhone e Android.
+Correção dos avisos sonoros:
+- Reutiliza o AudioContext desbloqueado ao ativar recepção, evitando contexto novo suspenso no Safari.
+- Início ao pressionar FALAR (sem esperar chamadas de rede).
+- Fim ao soltar FALAR.
+- Recepção ao detectar que outro usuário ocupou o canal.
+- Sem aviso de canal ocupado: botão já fica desativado.
 
-Novidades:
-- Indicador de estado do rádio: conectado, reconectando, aguardando ou sem internet.
-- Recuperação de peers falhos/desconectados e novas tentativas de pré-conexão.
-- Reconexão ao voltar a rede ou retornar à tela do aplicativo.
-- Avisos curtos de chegada de áudio e início de ocupação do canal.
-- Melhor limpeza de conexões de usuários que saíram do canal.
-- Poll WebRTC ajustado para 280 ms enquanto o app está visível para reduzir requisições, sem refazer conexão a cada fala.
-- Suporte a vários peers já existente, com indicador da quantidade conectada.
-
-Não há gravação de segurança. A comunicação exige aplicativo aberto e recepção ativada.
-Em iPhone, o Safari pode suspender conexões quando o app fica em segundo plano.
-
-INSTALAÇÃO: substituir o conteúdo do repositório pelo ZIP completo e publicar no Cloudflare Pages.
-SQL: nenhum novo; manter o banco da V1.6.2.
-
-TESTES NECESSÁRIOS: 2 e 3+ aparelhos, ida e volta, troca de rede, alternância de tela, canal ocupado e bateria. O ZIP não foi testado em celulares reais.
+Sem alteração SQL. Preserve a V1.6.2 estável como retorno. Teste com dois aparelhos.
