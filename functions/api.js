@@ -30,6 +30,12 @@ try{
   const r=await db('/rest/v1/rpc/comunica_ptt_claim','POST',{p_channel:b.channel_id,p_user:p.id,p_sender:p.name,p_lease:lease});
   return json({granted:r===true,lease:r===true?lease:null});
  }
+ if(action==='ptt_renew'){
+  await member(b.channel_id);
+  if(!/^[0-9a-f-]{36}$/i.test(String(b.lease||'')))throw Error('Identificador inválido');
+  const r=await db('/rest/v1/rpc/comunica_ptt_renew','POST',{p_channel:b.channel_id,p_user:p.id,p_lease:b.lease});
+  return json({ok:r===true});
+ }
  if(action==='ptt_release'){
   await member(b.channel_id);
   if(!/^[0-9a-f-]{36}$/i.test(String(b.lease||'')))throw Error('Identificador inválido');

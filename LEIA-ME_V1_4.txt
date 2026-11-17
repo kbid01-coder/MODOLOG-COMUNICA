@@ -1,0 +1,15 @@
+MODOLOG COMUNICA V1.4 — ESTABILIZACAO DO PTT
+
+1. No Supabase SQL Editor, execute SQL_COMUNICA_V1_4.sql.
+2. No GitHub, substitua index.html e functions/api.js mantendo os caminhos.
+3. Aguarde o deploy do Cloudflare Pages e teste com dois aparelhos.
+
+MUDANCAS
+- Renovacao da reserva de canal a cada 5 segundos enquanto o transmissor esta ativo.
+- Limite de gravacao ampliado para 45 segundos (o limite de tamanho de 1 MB ainda se aplica).
+- Corrigida sobreposicao de consultas de audio que poderia ocasionar reproducao duplicada.
+- Mensagem mais clara sobre as limitacoes do PTT atual.
+
+ATENCAO: Esta versao NAO implementa audio continuo em tempo real. O audio ainda e transmitido ao soltar o botao. WebRTC requer sinalizacao e, para confiabilidade em redes moveis, infraestrutura TURN. Tela bloqueada nao e suportada pela PWA.
+
+Nao exclua tabelas, usuarios ou dados existentes. Nao envie chaves secretas no chat.
