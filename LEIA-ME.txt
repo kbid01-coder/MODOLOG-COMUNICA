@@ -1,9 +1,20 @@
-MODOLOG COMUNICA V1.6.2 — ZIP COMPLETO
+MODOLOG COMUNICA V1.7.0 — PACOTE COMPLETO
 
-Correção iPhone -> Android: na resposta à oferta WebRTC, negociar áudio bidirecional (sendrecv) para permitir envio de microfone também no aparelho que responde à conexão. A transmissão usa o sender da transceiver de áudio negociada.
+Base: V1.6.2 validada em iPhone e Android.
 
-Preservado: conexão antecipada rápida, Android -> iPhone, chat, canais, transmissão ao vivo sem gravação posterior.
+Novidades:
+- Indicador de estado do rádio: conectado, reconectando, aguardando ou sem internet.
+- Recuperação de peers falhos/desconectados e novas tentativas de pré-conexão.
+- Reconexão ao voltar a rede ou retornar à tela do aplicativo.
+- Avisos curtos de chegada de áudio e início de ocupação do canal.
+- Melhor limpeza de conexões de usuários que saíram do canal.
+- Poll WebRTC ajustado para 280 ms enquanto o app está visível para reduzir requisições, sem refazer conexão a cada fala.
+- Suporte a vários peers já existente, com indicador da quantidade conectada.
 
-Instalação: substituir arquivos do repositório GitHub e publicar no Cloudflare Pages. Nenhum SQL novo.
+Não há gravação de segurança. A comunicação exige aplicativo aberto e recepção ativada.
+Em iPhone, o Safari pode suspender conexões quando o app fica em segundo plano.
 
-Testar nos dois sentidos em aparelhos reais; correção ainda não validada em dispositivos.
+INSTALAÇÃO: substituir o conteúdo do repositório pelo ZIP completo e publicar no Cloudflare Pages.
+SQL: nenhum novo; manter o banco da V1.6.2.
+
+TESTES NECESSÁRIOS: 2 e 3+ aparelhos, ida e volta, troca de rede, alternância de tela, canal ocupado e bateria. O ZIP não foi testado em celulares reais.
