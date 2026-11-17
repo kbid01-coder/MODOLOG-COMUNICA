@@ -1,10 +1,9 @@
-MODOLOG COMUNICA V1.7.1 — PACOTE COMPLETO
+MODOLOG COMUNICA V1.7.2 — ZIP COMPLETO
 
-Correção dos avisos sonoros:
-- Reutiliza o AudioContext desbloqueado ao ativar recepção, evitando contexto novo suspenso no Safari.
-- Início ao pressionar FALAR (sem esperar chamadas de rede).
-- Fim ao soltar FALAR.
-- Recepção ao detectar que outro usuário ocupou o canal.
-- Sem aviso de canal ocupado: botão já fica desativado.
+- Sessão persistente no aparelho usando refresh token rotativo do Supabase.
+- Recepção WebRTC iniciada automaticamente após autenticação, sem botão.
+- No Safari iOS, reprodução de áudio pode exigir o primeiro toque após reabrir o app, por política do navegador.
+- Sair encerra a sessão local.
+- Mantidas conexão antecipada e transmissão ao vivo sem gravação.
 
-Sem alteração SQL. Preserve a V1.6.2 estável como retorno. Teste com dois aparelhos.
+Publique todos os arquivos no GitHub/Cloudflare Pages. Não requer SQL.

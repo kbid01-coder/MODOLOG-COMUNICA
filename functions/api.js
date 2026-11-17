@@ -7,7 +7,14 @@ try{
  async function db(path,method='GET',body){const r=await fetch(url+path,{method,headers:{...headers,...(method!=='GET'?{Prefer:'return=representation'}:{})},...(body===undefined?{}:{body:JSON.stringify(body)})});if(!r.ok)throw new Error((await r.text()).slice(0,350));const t=await r.text();return t?JSON.parse(t):null}
  if(action==='login'){
   const r=await fetch(url+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:pub,'Content-Type':'application/json'},body:JSON.stringify({email:b.email,password:b.password})});const x=await r.json();if(!r.ok)return json({error:'Credenciais inválidas'},401);
-  const p=await identity(x.user.id);if(!p)return json({error:'Usuário sem acesso ao COMUNICA'},403);return json({access_token:x.access_token});
+  const p=await identity(x.user.id);if(!p)return json({error:'Usuário sem acesso ao COMUNICA'},403);return json({access_token:x.access_token,refresh_token:x.refresh_token});
+ }
+ if(action==='refresh_session'){
+  const rt=String(b.refresh_token||'');if(!rt||rt.length>4096)return json({error:'Sessão expirada'},401);
+  const r=await fetch(url+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:pub,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:rt})});
+  const x=await r.json();if(!r.ok)return json({error:'Sessão expirada. Entre novamente.'},401);
+  const p=await identity(x.user.id);if(!p)return json({error:'Usuário sem acesso ao COMUNICA'},403);
+  return json({access_token:x.access_token,refresh_token:x.refresh_token});
  }
  async function identity(id){const a=await db('/rest/v1/modolog_profiles?id=eq.'+encodeURIComponent(id)+'&select=id,name,role,active');if(a?.[0]?.active)return {id,name:a[0].name,role:a[0].role,admin:['master','admin'].includes(a[0].role)};const c=await db('/rest/v1/comunica_users?id=eq.'+encodeURIComponent(id)+'&select=id,name,role,active');if(c?.[0]?.active)return {id,name:c[0].name,role:c[0].role,admin:false};return null}
  const token=(request.headers.get('Authorization')||'').replace(/^Bearer\s+/i,'');if(!token)return json({error:'Login necessário'},401);
