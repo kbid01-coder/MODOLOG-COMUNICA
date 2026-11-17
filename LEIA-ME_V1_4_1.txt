@@ -1,0 +1,8 @@
+MODOLOG COMUNICA V1.4.1 - CORRECAO BOTAO PTT
+
+Substituir somente index.html na raiz do repositorio modolog-comunica no GitHub.
+Aguardar o deploy no Cloudflare Pages.
+Nao executar SQL; nenhuma alteracao no Supabase.
+
+Correcao: desativar selecao de texto, menu de toque longo e gestos de arrastar no botao PTT em Android e iPhone.
+Teste: manter pressionado o texto do botao, falar e soltar. Conferir envio e liberacao do canal.
