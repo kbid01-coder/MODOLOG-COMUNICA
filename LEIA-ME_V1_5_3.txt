@@ -1,0 +1,12 @@
+MODOLOG COMUNICA V1.5.3 — correção de entrega de áudio
+
+Atualizar apenas index.html na raiz do repositório. Sem SQL.
+
+Mudanças:
+- Evita descartar a gravação quando WebRTC conecta, mas o receptor não reproduz som.
+- Amplia o tempo de espera da reprodução de gravações de 18 para 60 segundos.
+- Ajusta o elemento de áudio WebRTC para Safari/iPhone.
+
+IMPORTANTE: esta versão envia a gravação ao soltar mesmo quando o WebRTC conectou. Isso evita perda de mensagens, mas pode causar áudio duplicado se a transmissão ao vivo também for ouvida. É uma correção provisória de confiabilidade, não a solução definitiva de streaming.
+
+Teste Android para iPhone com 5, 15 e 25 segundos. Se não tocar, verificar erro de reprodução ou upload.
