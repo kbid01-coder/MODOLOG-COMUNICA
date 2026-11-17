@@ -1,12 +1,12 @@
-MODOLOG COMUNICA — V1.5.8
+MODOLOG COMUNICA V1.5.9 — ZIP COMPLETO
 
-ZIP COMPLETO para substituir o projeto no GitHub.
+Ajustes de latência:
+- Sinalização WebRTC: 110 ms (antes 180 ms).
+- Verificação de canal: 160 ms (antes 250 ms), com proteção contra requisições sobrepostas.
+- Monitor de reprodução: 450 ms (antes 650 ms).
 
-- Rádio PTT exclusivamente ao vivo via WebRTC: não grava nem envia áudio ao soltar FALAR.
-- Detecção do canal a cada 250 ms com recepção ativa, evitando requisições sobrepostas.
-- Sinalização WebRTC a cada 180 ms durante sessão ativa.
-- Preservados chat, canais, usuários, controle de canal ocupado, Web Audio no iPhone e diagnósticos.
+Mantidos: transmissão somente ao vivo, sem gravação de segurança, áudio bidirecional, chat, canais e usuários.
 
-ATENÇÃO: se a ligação WebRTC falhar, o áudio não será recuperado por gravação. O início depende da rede e da negociação WebRTC.
+Esta versão NÃO implementa conexão persistente antecipada: isso requer mudanças adicionais no protocolo de sinalização e testes nos dois aparelhos. Intervalos menores aumentam as requisições ao servidor.
 
-Não requer SQL novo. Testar nos dois sentidos após publicar.
+Instalação: substituir todos os arquivos do repositório pelos deste ZIP, preservando as pastas. Não exige SQL novo.
