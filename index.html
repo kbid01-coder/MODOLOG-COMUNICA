@@ -27,7 +27,7 @@ $('pttEnable').onclick=async()=>{try{
  }catch(e){rtcAudioUnlock='Falha: '+e.message;msg('Não foi possível habilitar áudio: '+e.message)}};
 
 function beep(freq=750,duration=90){try{const ctx=window._beepCtx||(window._beepCtx=new (window.AudioContext||window.webkitAudioContext)());if(ctx.state==='suspended')ctx.resume().catch(()=>{});const o=ctx.createOscillator(),g=ctx.createGain();o.frequency.value=freq;o.type='sine';g.gain.setValueAtTime(.08,ctx.currentTime);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+duration/1000);o.connect(g).connect(ctx.destination);o.start();o.stop(ctx.currentTime+duration/1000)}catch{}}
-// V1.6.1: sinalização e detecção de canal otimizadas. WebRTC em tempo real. Sem TURN, algumas redes 4G/5G podem bloquear a ligação.
+// V1.6.2: sinalização e detecção de canal otimizadas. WebRTC em tempo real. Sem TURN, algumas redes 4G/5G podem bloquear a ligação.
 const rtcConfig={iceServers:[{urls:'stun:stun.l.google.com:19302'}]};
 let rtcPresenceTimer=null,rtcPresenceBusy=false,rtcPreparing=new Set(),rtcPresenceReady=false;let rtcAudioCtx=null,rtcAudioNodes=new Map(),rtcAudioUnlock='',rtcPeers=new Map(),rtcSession=null,rtcCursor=0,rtcReceiver=false,rtcPollBusy=false,rtcPollTimer=null,rtcLiveCount=0,rtcAudio=new Map(),rtcJoinAt=0,rtcPendingIce=new Map(),rtcSeenAudio=false,rtcDiagnostics='',rtcPendingJoins=new Set(),rtcSignalCounts={join:0,offer:0,answer:0,ice:0},rtcAudioConfirmed=false,rtcAudioAckSent=new Set(),rtcAudioLastBytes=new Map();
 function rtcClose(){clearInterval(rtcPresenceTimer);rtcPresenceTimer=null;rtcPresenceReady=false;rtcPreparing.clear();clearInterval(rtcPollTimer);rtcPollTimer=null;for(const pc of rtcPeers.values())pc.close();rtcPeers.clear();for(const a of rtcAudio.values()){a.pause();a.srcObject=null;a.remove()}rtcAudio.clear();for(const node of rtcAudioNodes.values()){try{node.disconnect()}catch{}}rtcAudioNodes.clear();rtcPendingIce.clear();rtcSession=null;rtcCursor=0;rtcReceiver=false;rtcLiveCount=0;rtcSeenAudio=false;rtcDiagnostics='';rtcPendingJoins.clear();rtcSignalCounts={join:0,offer:0,answer:0,ice:0};rtcAudioAckSent.clear();rtcAudioLastBytes.clear();rtcAudioConfirmed=false;}
@@ -102,7 +102,7 @@ function rtcPeer(id,asSender){let pc=rtcPeers.get(id);if(pc)return pc;pc=new RTC
  a.play().then(()=>{$('pttStatus').textContent='🟢 Reprodução WebRTC iniciada';rtcDebugSnapshot().catch(()=>{})}).catch(err=>{rtcDiagnostics='Falha reprodução: '+err.name+' '+err.message;$('pttStatus').textContent='Falha reprodução WebRTC: '+err.name;rtcDebugSnapshot().catch(()=>{});console.warn('Autoplay WebRTC',err)})}}return pc}
 async function rtcFlushIce(id){const pc=rtcPeers.get(id);if(!pc?.remoteDescription)return;const pending=rtcPendingIce.get(id)||[];rtcPendingIce.delete(id);for(const candidate of pending){try{await pc.addIceCandidate(new RTCIceCandidate(candidate))}catch(e){console.warn('ICE pendente',e)}}}
 async function rtcHandle(m){const id=m.from_user;rtcSignalCounts[m.kind]=(rtcSignalCounts[m.kind]||0)+1;
- if(m.kind==='offer'){if(!audioEnabled)return;const pc=rtcPeer(id,false);if(pc.signalingState!=='stable')return;await pc.setRemoteDescription(new RTCSessionDescription(m.payload));await rtcFlushIce(id);const answer=await pc.createAnswer();await pc.setLocalDescription(answer);await rtcSignal(id,'answer',{type:pc.localDescription.type,sdp:pc.localDescription.sdp})}
+ if(m.kind==='offer'){if(!audioEnabled)return;const pc=rtcPeer(id,false);if(pc.signalingState!=='stable')return;await pc.setRemoteDescription(new RTCSessionDescription(m.payload));for(const t of pc.getTransceivers()){if(t.receiver?.track?.kind==='audio')t.direction='sendrecv'}await rtcFlushIce(id);const answer=await pc.createAnswer();await pc.setLocalDescription(answer);await rtcSignal(id,'answer',{type:pc.localDescription.type,sdp:pc.localDescription.sdp})}
  else if(m.kind==='answer'){const pc=rtcPeers.get(id);if(pc&&pc.signalingState==='have-local-offer'){await pc.setRemoteDescription(new RTCSessionDescription(m.payload));await rtcFlushIce(id)}}
  else if(m.kind==='ice'){if(m.payload?.audio_received===true){rtcAudioConfirmed=true;return}const pc=rtcPeers.get(id);if(!pc?.remoteDescription){const q=rtcPendingIce.get(id)||[];if(q.length<100)q.push(m.payload);rtcPendingIce.set(id,q)}else{try{await pc.addIceCandidate(new RTCIceCandidate(m.payload))}catch(e){console.warn('ICE',e)}}}
 }
@@ -121,7 +121,7 @@ async function beginVoice(e){e.preventDefault();if(recorder||pressPending||pttSe
   leaseHeartbeat=setInterval(async()=>{if(!pttLease)return;try{const r=await api('ptt_renew',{channel_id:pttChannelLock,lease:pttLease});if(!r.ok){msg('Conexão do rádio interrompida');endVoice()}}catch(e){msg('Falha de conexão PTT: '+e.message);endVoice()}},5000);
   mic=await micPromise;if(!pressPending||channel!==selected){mic.getTracks().forEach(t=>t.stop());return}recordStream=mic;
   const track=mic.getAudioTracks()[0];const tasks=[];
-  for(const pc of rtcPeers.values()){const sender=pc.getSenders().find(x=>x.track?.kind==='audio')||pc.getSenders()[0];if(sender)tasks.push(sender.replaceTrack(track).catch(e=>{rtcDiagnostics='Microfone: '+e.message}))}
+  for(const pc of rtcPeers.values()){const transceiver=pc.getTransceivers().find(t=>t.receiver?.track?.kind==='audio'||t.sender?.track?.kind==='audio');const sender=transceiver?.sender;if(sender&&transceiver.currentDirection?.includes('send'))tasks.push(sender.replaceTrack(track).catch(e=>{rtcDiagnostics='Microfone: '+e.message}));else rtcDiagnostics='Envio indisponível: direção '+(transceiver?.currentDirection||'não negociada')}
   await Promise.all(tasks);recorder={state:'recording'};recordStarted=Date.now();beep(850,90);
   $('pttStatus').textContent='🔴 '+me.name+' transmitindo ao vivo · '+rtcLiveCount+' conexões';$('pttButton').textContent='🔴 FALANDO';
   pttStopTimer=setTimeout(()=>{if(recorder?.state==='recording')endVoice()},45000);
@@ -129,7 +129,7 @@ async function beginVoice(e){e.preventDefault();if(recorder||pressPending||pttSe
 }
 function endVoice(){pressPending=false;if(recorder?.state==='recording'){recorder.state='stopped';finishVoice().catch(e=>msg('Erro ao encerrar transmissão: '+e.message))}}
 async function finishVoice(){
- recorder=null;const peers=[...rtcPeers.values()];await Promise.all(peers.map(async pc=>{for(const sender of pc.getSenders()){if(sender.track?.kind==='audio')await sender.replaceTrack(null).catch(()=>{})}}));
+ recorder=null;const peers=[...rtcPeers.values()];await Promise.all(peers.map(async pc=>{for(const t of pc.getTransceivers()){if(t.receiver?.track?.kind==='audio'&&t.sender.track)await t.sender.replaceTrack(null).catch(()=>{})}}));
  recordStream?.getTracks().forEach(t=>t.stop());recordStream=null;
  $('pttButton').textContent='🎙 SEGURE PARA FALAR';beep(550,90);pttSending=true;
  $('pttStatus').textContent='Transmissão encerrada · conexão pronta';

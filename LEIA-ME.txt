@@ -1,7 +1,9 @@
-MODOLOG COMUNICA V1.6.1 — ZIP COMPLETO
+MODOLOG COMUNICA V1.6.2 — ZIP COMPLETO
 
-Corrigida a incompatibilidade entre sessão legada e sessão persistente na API rtc_poll e rtc_signal. As mensagens WebRTC agora usam o ID do canal como sessão, inclusive quando chegam identificadores antigos.
+Correção iPhone -> Android: na resposta à oferta WebRTC, negociar áudio bidirecional (sendrecv) para permitir envio de microfone também no aparelho que responde à conexão. A transmissão usa o sender da transceiver de áudio negociada.
 
-Instalação: substitua os arquivos no GitHub, mantendo a estrutura. O SQL_COMUNICA_V1_6.sql precisa ter sido executado uma vez no Supabase. Não é necessário repetir o SQL se já foi executado com sucesso.
+Preservado: conexão antecipada rápida, Android -> iPhone, chat, canais, transmissão ao vivo sem gravação posterior.
 
-Sem gravação de segurança. Testar áudio Android/iPhone em ambos os sentidos.
+Instalação: substituir arquivos do repositório GitHub e publicar no Cloudflare Pages. Nenhum SQL novo.
+
+Testar nos dois sentidos em aparelhos reais; correção ainda não validada em dispositivos.
