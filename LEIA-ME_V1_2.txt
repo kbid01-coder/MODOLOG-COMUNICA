@@ -1,0 +1,9 @@
+MODOLOG COMUNICA V1.2 — PRIMEIRO TESTE DE ÁUDIO PTT
+
+1. Executar SQL_COMUNICA_V1_2.sql no Supabase (cria bucket privado e tabela).
+2. Substituir index.html, functions/api.js e sw.js no projeto Cloudflare Pages.
+3. Fazer novo deploy e testar em dois celulares no mesmo canal, com o aplicativo aberto.
+4. Em cada celular, tocar em 'Ativar recepção de áudio'. Pressionar e segurar FALAR para gravar; soltar para enviar.
+
+IMPORTANTE: nesta etapa o áudio é enviado como mensagem curta, NÃO é transmissão ao vivo. Recepção automática depende de autorização do navegador, app aberto e rede; tela bloqueada NÃO é suportada. PTT ao vivo e Android nativo são etapas futuras.
+Não remover os outros arquivos do projeto.

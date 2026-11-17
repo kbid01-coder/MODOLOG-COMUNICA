@@ -18,6 +18,25 @@ try{
  if(action==='channels'){const cs=await db('/rest/v1/comunica_channels?select=id,name,is_general&order=created_at.asc');const ms=await db('/rest/v1/comunica_members?user_id=eq.'+encodeURIComponent(p.id)+'&select=channel_id');const allowed=new Set(ms.map(m=>m.channel_id));return json({channels:cs.filter(c=>p.admin||c.is_general||allowed.has(c.id))})}
  if(action==='messages'){await member(b.channel_id);const rows=await db('/rest/v1/comunica_messages?channel_id=eq.'+encodeURIComponent(b.channel_id)+'&select=id,user_id,sender,body,created_at&order=created_at.desc&limit=100');return json({messages:rows.reverse()})}
  if(action==='send'){await member(b.channel_id);const body=String(b.body||'').trim();if(!body||body.length>4000)throw Error('Mensagem inválida');await db('/rest/v1/comunica_messages','POST',{channel_id:b.channel_id,user_id:p.id,sender:p.name,body});return json({ok:true})}
+
+ if(action==='voice_list'){await member(b.channel_id);const rows=await db('/rest/v1/comunica_voice?channel_id=eq.'+encodeURIComponent(b.channel_id)+'&select=id,user_id,sender,created_at&order=id.desc&limit=25');return json({items:rows.reverse()})}
+ if(action==='voice_send'){
+  await member(b.channel_id);
+  const content=String(b.content||''),mime=String(b.mime||'');
+  if(content.length>1400000||!/^audio\/(webm|mp4|ogg)(;|$)/.test(mime))throw Error('Formato ou tamanho de áudio inválido');
+  const raw=Uint8Array.from(atob(content),c=>c.charCodeAt(0));if(raw.length>1000000||raw.length<200)throw Error('Áudio inválido');
+  const ext=mime.startsWith('audio/mp4')?'mp4':mime.startsWith('audio/ogg')?'ogg':'webm';
+  const path=b.channel_id+'/'+crypto.randomUUID()+'.'+ext;
+  const upload=await fetch(url+'/storage/v1/object/comunica-voice/'+path,{method:'POST',headers:{apikey:key,Authorization:'Bearer '+key,'Content-Type':mime,'x-upsert':'false'},body:raw});
+  if(!upload.ok)throw Error('Falha ao armazenar áudio: '+(await upload.text()).slice(0,120));
+  await db('/rest/v1/comunica_voice','POST',{channel_id:b.channel_id,user_id:p.id,sender:p.name,path});return json({ok:true});
+ }
+ if(action==='voice_url'){
+  await member(b.channel_id);const id=Number(b.id);if(!Number.isSafeInteger(id)||id<1)throw Error('Áudio inválido');
+  const rows=await db('/rest/v1/comunica_voice?id=eq.'+id+'&channel_id=eq.'+encodeURIComponent(b.channel_id)+'&select=path');if(!rows.length)throw Error('Áudio não encontrado');
+  const r=await fetch(url+'/storage/v1/object/sign/comunica-voice/'+rows[0].path,{method:'POST',headers,body:JSON.stringify({expiresIn:60})});
+  if(!r.ok)throw Error('Não foi possível abrir o áudio');const x=await r.json();return json({url:url+'/storage/v1'+x.signedURL});
+ }
  if(action==='create_channel'){admin();const name=String(b.name||'').trim();if(name.length<3||name.length>100)throw Error('Informe um nome entre 3 e 100 caracteres');await db('/rest/v1/comunica_channels','POST',{name,is_general:false,created_by:p.id});return json({ok:true})}
  if(action==='create_user'){admin();const name=String(b.name||'').trim(),email=String(b.email||'').trim().toLowerCase(),password=String(b.password||'');if(!name||!email.includes('@')||password.length<8)throw Error('Nome, e-mail e senha de 8 caracteres são obrigatórios');const r=await fetch(url+'/auth/v1/admin/users',{method:'POST',headers,body:JSON.stringify({email,password,email_confirm:true,user_metadata:{name}})});const u=await r.json();if(!r.ok)throw Error(u.msg||u.message||'Falha ao criar usuário');try{await db('/rest/v1/comunica_users','POST',{id:u.id,name,email,role:'operador',active:true})}catch(e){await fetch(url+'/auth/v1/admin/users/'+encodeURIComponent(u.id),{method:'DELETE',headers});throw e}return json({ok:true})}
  return json({error:'Ação desconhecida'},400);

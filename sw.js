@@ -1,1 +1,1 @@
-const CACHE='modolog-comunica-v1-1';self.addEventListener('install',e=>{self.skipWaiting()});self.addEventListener('activate',e=>{e.waitUntil(self.clients.claim())});
+const CACHE='modolog-comunica-v1-2';self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));
