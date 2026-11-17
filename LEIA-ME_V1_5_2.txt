@@ -1,0 +1,12 @@
+MODOLOG COMUNICA V1.5.2 - CORREÇÃO DE NEGOCIAÇÃO WEBRTC (PILOTO)
+
+Arquivos para substituir no GitHub:
+- index.html (na raiz do repositório)
+
+Não executar SQL. Não alterar functions/api.js.
+
+Correção: solicitações de conexão que chegam antes de o microfone estar pronto são guardadas e processadas após a captura. Exibe contadores de sinalização e estado ICE para diagnóstico.
+
+Teste: dois celulares na mesma rede Wi-Fi, mesmo canal, recepção ativada. Pressione e mantenha FALAR. Confira se o outro celular ouve antes de soltar. Se não, anote a mensagem de estado exibida nos dois celulares.
+
+Versão experimental: não há garantia de conexão; a transmissão por mensagem ao soltar permanece como alternativa. Não funciona com tela bloqueada.
