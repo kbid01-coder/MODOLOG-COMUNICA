@@ -1,0 +1,4 @@
+MODOLOG COMUNICA V1.5.4 — diagnóstico WebRTC.
+Substitua apenas index.html na raiz do repositório GitHub. Não requer SQL.
+Abra Rádio PTT > Diagnóstico WebRTC V1.5.4 durante a transmissão Android → iPhone e capture as informações dos dois aparelhos.
+Esta versão é diagnóstica e não garante correção do áudio em tempo real.
