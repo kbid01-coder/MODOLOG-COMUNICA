@@ -1,12 +1,9 @@
-MODOLOG COMUNICA V1.5.9 — ZIP COMPLETO
+MODOLOG COMUNICA V1.6.0 — ZIP COMPLETO
 
-Ajustes de latência:
-- Sinalização WebRTC: 110 ms (antes 180 ms).
-- Verificação de canal: 160 ms (antes 250 ms), com proteção contra requisições sobrepostas.
-- Monitor de reprodução: 450 ms (antes 650 ms).
+IMPORTANTE: executar SQL_COMUNICA_V1_6.sql no Supabase antes de publicar esta versão.
 
-Mantidos: transmissão somente ao vivo, sem gravação de segurança, áudio bidirecional, chat, canais e usuários.
+Novidade: conexão WebRTC antecipada ao ativar recepção, presença dos aparelhos por canal, conexão persistente entre transmissões e envio do microfone por replaceTrack, sem renegociar SDP ao pressionar FALAR. Nenhuma gravação de segurança.
 
-Esta versão NÃO implementa conexão persistente antecipada: isso requer mudanças adicionais no protocolo de sinalização e testes nos dois aparelhos. Intervalos menores aumentam as requisições ao servidor.
+Instalação: substituir todos os arquivos no GitHub mantendo a pasta functions; aguardar Cloudflare Pages.
 
-Instalação: substituir todos os arquivos do repositório pelos deste ZIP, preservando as pastas. Não exige SQL novo.
+Testar em dois aparelhos com recepção ativada, aguardar alguns segundos para conexão antecipada e então falar. A velocidade depende da rede e do navegador. V1.5.9 permanece como versão estável para rollback.

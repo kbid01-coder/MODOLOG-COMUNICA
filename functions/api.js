@@ -41,18 +41,22 @@ try{
   if(!/^[0-9a-f-]{36}$/i.test(String(b.lease||'')))throw Error('Identificador inválido');
   await db('/rest/v1/rpc/comunica_ptt_release','POST',{p_channel:b.channel_id,p_user:p.id,p_lease:b.lease});return json({ok:true});
  }
+ if(action==='rtc_presence'){
+  await member(b.channel_id);
+  const up=await fetch(url+'/rest/v1/comunica_rtc_presence?on_conflict=channel_id,user_id',{method:'POST',headers:{...headers,Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({channel_id:b.channel_id,user_id:p.id,last_seen:new Date().toISOString()})});if(!up.ok)throw Error('Presença WebRTC: '+(await up.text()).slice(0,150));
+  const cutoff=new Date(Date.now()-12000).toISOString();
+  const rows=await db('/rest/v1/comunica_rtc_presence?channel_id=eq.'+encodeURIComponent(b.channel_id)+'&last_seen=gt.'+encodeURIComponent(cutoff)+'&select=user_id');
+  return json({peers:rows.map(x=>x.user_id).filter(id=>id!==p.id)});
+ }
  if(action==='rtc_signal'){
   await member(b.channel_id);
   const lease=String(b.session||''),target=String(b.to||''),kind=String(b.kind||'');
   if(!/^[0-9a-f-]{36}$/i.test(lease)||!/^[0-9a-f-]{36}$/i.test(target)||!['join','offer','answer','ice'].includes(kind))throw Error('Sinalização inválida');
-  const locks=await db('/rest/v1/comunica_ptt_locks?channel_id=eq.'+encodeURIComponent(b.channel_id)+'&lease_id=eq.'+lease+'&expires_at=gt.'+encodeURIComponent(new Date().toISOString())+'&select=user_id');
-  if(!locks.length)throw Error('Transmissão encerrada');
-  const sender=locks[0].user_id;
-  if(kind==='join'&&target!==sender)throw Error('Destino inválido');
-  if(kind==='offer'&&p.id!==sender)throw Error('Somente transmissor pode oferecer áudio');
-  if(kind==='answer'&&target!==sender)throw Error('Resposta inválida');
-  if(kind==='ice'&&p.id!==sender&&target!==sender)throw Error('Destino inválido');
+  if(lease!==b.channel_id)throw Error('Sessão WebRTC inválida');
   if(target===p.id)throw Error('Destino inválido');
+  const cutoff=new Date(Date.now()-12000).toISOString();
+  const rows=await db('/rest/v1/comunica_rtc_presence?channel_id=eq.'+encodeURIComponent(b.channel_id)+'&user_id=eq.'+encodeURIComponent(target)+'&last_seen=gt.'+encodeURIComponent(cutoff)+'&select=user_id');
+  if(!rows.length)throw Error('Aparelho não está ativo no canal');
   const payload=b.payload||{};
   if(JSON.stringify(payload).length>12000)throw Error('Sinal muito grande');
   await db('/rest/v1/comunica_rtc_signals','POST',{channel_id:b.channel_id,session_id:lease,from_user:p.id,to_user:target,kind,payload});
@@ -61,8 +65,8 @@ try{
  if(action==='rtc_poll'){
   await member(b.channel_id);
   const lease=String(b.session||''),since=Number(b.since||0);
-  if(!/^[0-9a-f-]{36}$/i.test(lease)||!Number.isSafeInteger(since)||since<0)throw Error('Consulta inválida');
-  const rows=await db('/rest/v1/comunica_rtc_signals?channel_id=eq.'+encodeURIComponent(b.channel_id)+'&session_id=eq.'+lease+'&to_user=eq.'+encodeURIComponent(p.id)+'&id=gt.'+since+'&select=id,from_user,kind,payload&order=id.asc&limit=100');
+  if(lease!==b.channel_id||!Number.isSafeInteger(since)||since<0)throw Error('Consulta inválida');
+  const rows=await db('/rest/v1/comunica_rtc_signals?channel_id=eq.'+encodeURIComponent(b.channel_id)+'&session_id=eq.'+lease+'&to_user=eq.'+encodeURIComponent(p.id)+'&id=gt.'+since+'&created_at=gt.'+encodeURIComponent(new Date(Date.now()-20000).toISOString())+'&select=id,from_user,kind,payload&order=id.asc&limit=100');
   return json({items:rows});
  }
  if(action==='voice_list'){await member(b.channel_id);const rows=await db('/rest/v1/comunica_voice?channel_id=eq.'+encodeURIComponent(b.channel_id)+'&select=id,user_id,sender,created_at&order=id.desc&limit=25');return json({items:rows.reverse()})}
