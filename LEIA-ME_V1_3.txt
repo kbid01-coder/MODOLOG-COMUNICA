@@ -1,0 +1,16 @@
+MODOLOG COMUNICA V1.3 — ATUALIZAÇÃO INCREMENTAL
+
+1) No Supabase SQL Editor, executar SQL_COMUNICA_V1_3.sql uma vez.
+2) No repositório GitHub, substituir index.html, functions/api.js e sw.js mantendo a estrutura original.
+3) Fazer commit e aguardar publicação do Cloudflare Pages.
+4) Em dois celulares com contas diferentes, abrir o mesmo canal e habilitar recepção.
+5) Pressionar FALAR no primeiro celular. O segundo deve mostrar quem está falando e bloquear transmissão concorrente.
+6) Soltar FALAR. O áudio será enviado e reproduzido no outro celular. Verificar sinais sonoros e canal liberado.
+
+ATENÇÃO:
+- Esta versão ainda usa gravação e envio ao soltar o botão; não transmite áudio contínuo durante a fala.
+- Não opera com tela bloqueada nem garante áudio em segundo plano.
+- O controle de canal usa reserva no servidor por até 18 segundos, com liberação após envio. Se o navegador fechar abruptamente, a reserva expira.
+- A recepção automática depende da autorização de reprodução pelo navegador, conexão e aplicativo aberto.
+- Testar em dispositivos reais antes de uso operacional.
+- Não alterar nem publicar chaves secretas do Supabase no cliente.
