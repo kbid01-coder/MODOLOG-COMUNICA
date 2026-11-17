@@ -1,7 +1,7 @@
-MODOLOG COMUNICA V1.5.6 — ZIP COMPLETO
+MODOLOG COMUNICA V1.5.7 — PACOTE COMPLETO
 
-Atualização: correção experimental da reprodução WebRTC Android -> iPhone independente do diagnóstico; verificação periódica da rota de áudio; confirmação de recepção via sinalização para evitar repetição da gravação quando há áudio ao vivo.
+Otimizações: sinalização WebRTC a cada 250 ms durante chamada, consulta de canal a cada 500 ms com recepção ativada, solicitação de microfone em paralelo com reserva do canal.
 
-Instalação: substituir os arquivos do repositório pelo conteúdo deste ZIP, mantendo a estrutura. Publicar no Cloudflare Pages. Não é necessário SQL novo.
+Mantidos Web Audio para iPhone, confirmação do áudio recebido, fallback de gravação, chat, usuários e canais.
 
-ATENÇÃO: teste em Android e iPhone; confirmação de recepção de pacotes não garante que o som foi audível. Se não houver confirmação, a gravação continua sendo enviada ao soltar. Não funciona com tela bloqueada. Guarde a versão anterior para reversão.
+Substitua os arquivos no GitHub preservando as pastas. Não requer SQL novo. Validar no iPhone e Android.
