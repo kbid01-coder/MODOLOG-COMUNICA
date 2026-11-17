@@ -1,0 +1,14 @@
+MODOLOG COMUNICA V1.5.5 — PILOTO DE REPRODUÇÃO WEBRTC NO IPHONE
+
+Arquivos alterados: index.html
+
+1. Substitua index.html na raiz do repositório GitHub.
+2. Faça Commit changes e aguarde Cloudflare Pages publicar.
+3. Abra o app no iPhone, toque em Ativar recepção de áudio.
+4. No Android, mantenha FALAR pressionado por 10 segundos.
+5. No iPhone, veja o diagnóstico: Web Audio deve estar running e rotas=1.
+6. Verifique se escuta ANTES de soltar o botão.
+
+Não é necessário SQL. Mantenha a versão anterior disponível para retorno.
+A V1.5.5 é experimental: o comportamento no Safari e no Android ainda depende de teste real.
+Não há suporte à tela bloqueada.
