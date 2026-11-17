@@ -44,8 +44,8 @@ function beep(freq=750,duration=90){
 }
 // V1.6.2: sinalização e detecção de canal otimizadas. WebRTC em tempo real. Sem TURN, algumas redes 4G/5G podem bloquear a ligação.
 const rtcConfig={iceServers:[{urls:'stun:stun.l.google.com:19302'}]};
-let rtcNetworkOnline=navigator.onLine,rtcLastSignalOk=0,rtcRetryAt=new Map(),rtcLastBusy=false,rtcPresenceTimer=null,rtcPresenceBusy=false,rtcPreparing=new Set(),rtcPresenceReady=false;let rtcAudioCtx=null,rtcAudioNodes=new Map(),rtcAudioUnlock='',rtcPeers=new Map(),rtcSession=null,rtcCursor=0,rtcReceiver=false,rtcPollBusy=false,rtcPollTimer=null,rtcLiveCount=0,rtcAudio=new Map(),rtcJoinAt=0,rtcPendingIce=new Map(),rtcSeenAudio=false,rtcDiagnostics='',rtcPendingJoins=new Set(),rtcSignalCounts={join:0,offer:0,answer:0,ice:0},rtcAudioConfirmed=false,rtcAudioAckSent=new Set(),rtcAudioLastBytes=new Map();
-function rtcClose(){clearInterval(rtcPresenceTimer);rtcPresenceTimer=null;rtcPresenceReady=false;rtcPreparing.clear();clearInterval(rtcPollTimer);rtcPollTimer=null;for(const pc of rtcPeers.values())pc.close();rtcPeers.clear();for(const a of rtcAudio.values()){a.pause();a.srcObject=null;a.remove()}rtcAudio.clear();for(const node of rtcAudioNodes.values()){try{node.disconnect()}catch{}}rtcAudioNodes.clear();rtcPendingIce.clear();rtcSession=null;rtcCursor=0;rtcReceiver=false;rtcLiveCount=0;rtcSeenAudio=false;rtcDiagnostics='';rtcPendingJoins.clear();rtcSignalCounts={join:0,offer:0,answer:0,ice:0};rtcAudioAckSent.clear();rtcAudioLastBytes.clear();rtcAudioConfirmed=false;rtcRetryAt.clear();rtcConnectionIndicator()}
+let rtcNetworkOnline=navigator.onLine,rtcLastSignalOk=0,rtcRetryAt=new Map(),rtcLastBusy=false,rtcPresenceTimer=null,rtcPresenceBusy=false,rtcPreparing=new Set(),rtcPresenceReady=false,rtcAnnouncedPeers=new Set();let rtcAudioCtx=null,rtcAudioNodes=new Map(),rtcAudioUnlock='',rtcPeers=new Map(),rtcSession=null,rtcCursor=0,rtcReceiver=false,rtcPollBusy=false,rtcPollTimer=null,rtcLiveCount=0,rtcAudio=new Map(),rtcJoinAt=0,rtcPendingIce=new Map(),rtcSeenAudio=false,rtcDiagnostics='',rtcPendingJoins=new Set(),rtcSignalCounts={join:0,offer:0,answer:0,ice:0},rtcAudioConfirmed=false,rtcAudioAckSent=new Set(),rtcAudioLastBytes=new Map();
+function rtcClose(){clearInterval(rtcPresenceTimer);rtcPresenceTimer=null;rtcPresenceReady=false;rtcAnnouncedPeers.clear();rtcPreparing.clear();clearInterval(rtcPollTimer);rtcPollTimer=null;for(const pc of rtcPeers.values())pc.close();rtcPeers.clear();for(const a of rtcAudio.values()){a.pause();a.srcObject=null;a.remove()}rtcAudio.clear();for(const node of rtcAudioNodes.values()){try{node.disconnect()}catch{}}rtcAudioNodes.clear();rtcPendingIce.clear();rtcSession=null;rtcCursor=0;rtcReceiver=false;rtcLiveCount=0;rtcSeenAudio=false;rtcDiagnostics='';rtcPendingJoins.clear();rtcSignalCounts={join:0,offer:0,answer:0,ice:0};rtcAudioAckSent.clear();rtcAudioLastBytes.clear();rtcAudioConfirmed=false;rtcRetryAt.clear();rtcConnectionIndicator()}
 function rtcConnectionIndicator(){
  const el=$('rtcConnectionStatus');if(!el)return;
  if(!audioEnabled){el.textContent='⚪ Preparando recepção';return}
@@ -64,6 +64,12 @@ async function rtcPresence(){
  rtcPresenceBusy=true;
  try{const channel=selected;const r=await api('rtc_presence',{channel_id:channel});if(channel!==selected)return;
   const active=new Set(r.peers||[]);
+  // Avisar os outros participantes quando esta instância reabrir.
+  for(const id of [...rtcAnnouncedPeers])if(!active.has(id))rtcAnnouncedPeers.delete(id);
+  for(const id of active)if(!rtcAnnouncedPeers.has(id)){
+   rtcAnnouncedPeers.add(id);
+   rtcSignal(id,'join',{reopened:true}).catch(()=>rtcAnnouncedPeers.delete(id));
+  }
   for(const [id,pc] of rtcPeers){if(!active.has(id)&&pc.connectionState!=='connected')rtcDropPeer(id,pc)}
   for(const peer of r.peers||[]){if(peer===me.id||rtcPeers.has(peer)||rtcPreparing.has(peer))continue;
    if(me.id<peer){rtcPreparing.add(peer);try{const pc=rtcPeer(peer,false);pc.addTransceiver('audio',{direction:'sendrecv'});const offer=await pc.createOffer();await pc.setLocalDescription(offer);await rtcSignal(peer,'offer',{type:pc.localDescription.type,sdp:pc.localDescription.sdp})}catch(e){rtcDiagnostics='Pré-conexão: '+e.message}finally{rtcPreparing.delete(peer)}}
@@ -132,7 +138,13 @@ function rtcPeer(id,asSender){let pc=rtcPeers.get(id);if(pc)return pc;pc=new RTC
  a.play().then(()=>{$('pttStatus').textContent='🟢 Reprodução WebRTC iniciada';rtcDebugSnapshot().catch(()=>{})}).catch(err=>{rtcDiagnostics='Falha reprodução: '+err.name+' '+err.message;$('pttStatus').textContent='Falha reprodução WebRTC: '+err.name;rtcDebugSnapshot().catch(()=>{});console.warn('Autoplay WebRTC',err)})}}return pc}
 async function rtcFlushIce(id){const pc=rtcPeers.get(id);if(!pc?.remoteDescription)return;const pending=rtcPendingIce.get(id)||[];rtcPendingIce.delete(id);for(const candidate of pending){try{await pc.addIceCandidate(new RTCIceCandidate(candidate))}catch(e){console.warn('ICE pendente',e)}}}
 async function rtcHandle(m){const id=m.from_user;rtcSignalCounts[m.kind]=(rtcSignalCounts[m.kind]||0)+1;
- if(m.kind==='offer'){if(!audioEnabled)return;const pc=rtcPeer(id,false);if(pc.signalingState!=='stable')return;await pc.setRemoteDescription(new RTCSessionDescription(m.payload));for(const t of pc.getTransceivers()){if(t.receiver?.track?.kind==='audio')t.direction='sendrecv'}await rtcFlushIce(id);const answer=await pc.createAnswer();await pc.setLocalDescription(answer);await rtcSignal(id,'answer',{type:pc.localDescription.type,sdp:pc.localDescription.sdp})}
+ if(m.kind==='join'){
+  // A instância remota foi reiniciada; descartar sessão WebRTC antiga.
+  const old=rtcPeers.get(id);if(old)rtcDropPeer(id,old);
+  rtcPreparing.delete(id);
+  setTimeout(()=>rtcPresence().catch(()=>{}),350);
+ }
+ else if(m.kind==='offer'){if(!audioEnabled)return;const pc=rtcPeer(id,false);if(pc.signalingState!=='stable')return;await pc.setRemoteDescription(new RTCSessionDescription(m.payload));for(const t of pc.getTransceivers()){if(t.receiver?.track?.kind==='audio')t.direction='sendrecv'}await rtcFlushIce(id);const answer=await pc.createAnswer();await pc.setLocalDescription(answer);await rtcSignal(id,'answer',{type:pc.localDescription.type,sdp:pc.localDescription.sdp})}
  else if(m.kind==='answer'){const pc=rtcPeers.get(id);if(pc&&pc.signalingState==='have-local-offer'){await pc.setRemoteDescription(new RTCSessionDescription(m.payload));await rtcFlushIce(id)}}
  else if(m.kind==='ice'){if(m.payload?.audio_received===true){rtcAudioConfirmed=true;return}const pc=rtcPeers.get(id);if(!pc?.remoteDescription){const q=rtcPendingIce.get(id)||[];if(q.length<100)q.push(m.payload);rtcPendingIce.set(id,q)}else{try{await pc.addIceCandidate(new RTCIceCandidate(m.payload))}catch(e){console.warn('ICE',e)}}}
 }

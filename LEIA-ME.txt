@@ -1,9 +1,7 @@
-MODOLOG COMUNICA V1.7.2 — ZIP COMPLETO
+MODOLOG COMUNICA V1.7.3 — ZIP COMPLETO
 
-- Sessão persistente no aparelho usando refresh token rotativo do Supabase.
-- Recepção WebRTC iniciada automaticamente após autenticação, sem botão.
-- No Safari iOS, reprodução de áudio pode exigir o primeiro toque após reabrir o app, por política do navegador.
-- Sair encerra a sessão local.
-- Mantidas conexão antecipada e transmissão ao vivo sem gravação.
+Reconexão após reabrir somente um aparelho: sinal join anuncia a nova instância, remove a sessão antiga e permite nova negociação.
 
-Publique todos os arquivos no GitHub/Cloudflare Pages. Não requer SQL.
+Mantidos login permanente, recepção automática, áudio ao vivo e conexão rápida.
+
+Publicar todos os arquivos no GitHub. Sem SQL novo. Testar em Android e iPhone.
