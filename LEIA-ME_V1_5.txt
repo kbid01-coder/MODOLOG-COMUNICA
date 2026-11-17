@@ -1,0 +1,14 @@
+MODOLOG COMUNICA V1.5 - PILOTO WEBRTC
+
+1. Execute SQL_COMUNICA_V1_5.sql no SQL Editor do Supabase.
+2. Substitua index.html (raiz) e functions/api.js (pasta functions) no GitHub.
+3. Aguarde o deploy do Cloudflare Pages.
+4. Nos dois celulares, entre no mesmo canal e toque em Ativar recepção de áudio.
+5. Pressione FALAR e teste voz ao vivo com as telas abertas.
+
+ATENÇÃO: versão experimental. STUN público, sem TURN. Em certas redes móveis a ligação direta pode falhar.
+Se nenhum receptor WebRTC conectar, o áudio gravado continua sendo enviado ao soltar.
+Se um receptor conectar ao vivo, não é enviada cópia gravada: receptores sem conexão podem perder a fala.
+A tela bloqueada não é suportada por esta versão web.
+Não remova as tabelas antigas. Mantenha backup da V1.4.1 para reversão.
+O banco e a sintaxe foram preparados, mas o teste entre celulares reais ainda é necessário.

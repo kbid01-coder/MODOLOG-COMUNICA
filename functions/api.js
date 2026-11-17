@@ -21,8 +21,8 @@ try{
 
  if(action==='ptt_status'){
   await member(b.channel_id);
-  const locks=await db('/rest/v1/comunica_ptt_locks?channel_id=eq.'+encodeURIComponent(b.channel_id)+'&expires_at=gt.'+encodeURIComponent(new Date().toISOString())+'&select=user_id,sender,expires_at');
-  return json({busy:!!locks.length,sender:locks[0]?.sender||null,user_id:locks[0]?.user_id||null});
+  const locks=await db('/rest/v1/comunica_ptt_locks?channel_id=eq.'+encodeURIComponent(b.channel_id)+'&expires_at=gt.'+encodeURIComponent(new Date().toISOString())+'&select=user_id,sender,expires_at,lease_id');
+  return json({busy:!!locks.length,sender:locks[0]?.sender||null,user_id:locks[0]?.user_id||null,session:locks[0]?.lease_id||null});
  }
  if(action==='ptt_claim'){
   await member(b.channel_id);
@@ -40,6 +40,30 @@ try{
   await member(b.channel_id);
   if(!/^[0-9a-f-]{36}$/i.test(String(b.lease||'')))throw Error('Identificador inválido');
   await db('/rest/v1/rpc/comunica_ptt_release','POST',{p_channel:b.channel_id,p_user:p.id,p_lease:b.lease});return json({ok:true});
+ }
+ if(action==='rtc_signal'){
+  await member(b.channel_id);
+  const lease=String(b.session||''),target=String(b.to||''),kind=String(b.kind||'');
+  if(!/^[0-9a-f-]{36}$/i.test(lease)||!/^[0-9a-f-]{36}$/i.test(target)||!['join','offer','answer','ice'].includes(kind))throw Error('Sinalização inválida');
+  const locks=await db('/rest/v1/comunica_ptt_locks?channel_id=eq.'+encodeURIComponent(b.channel_id)+'&lease_id=eq.'+lease+'&expires_at=gt.'+encodeURIComponent(new Date().toISOString())+'&select=user_id');
+  if(!locks.length)throw Error('Transmissão encerrada');
+  const sender=locks[0].user_id;
+  if(kind==='join'&&target!==sender)throw Error('Destino inválido');
+  if(kind==='offer'&&p.id!==sender)throw Error('Somente transmissor pode oferecer áudio');
+  if(kind==='answer'&&target!==sender)throw Error('Resposta inválida');
+  if(kind==='ice'&&p.id!==sender&&target!==sender)throw Error('Destino inválido');
+  if(target===p.id)throw Error('Destino inválido');
+  const payload=b.payload||{};
+  if(JSON.stringify(payload).length>12000)throw Error('Sinal muito grande');
+  await db('/rest/v1/comunica_rtc_signals','POST',{channel_id:b.channel_id,session_id:lease,from_user:p.id,to_user:target,kind,payload});
+  return json({ok:true});
+ }
+ if(action==='rtc_poll'){
+  await member(b.channel_id);
+  const lease=String(b.session||''),since=Number(b.since||0);
+  if(!/^[0-9a-f-]{36}$/i.test(lease)||!Number.isSafeInteger(since)||since<0)throw Error('Consulta inválida');
+  const rows=await db('/rest/v1/comunica_rtc_signals?channel_id=eq.'+encodeURIComponent(b.channel_id)+'&session_id=eq.'+lease+'&to_user=eq.'+encodeURIComponent(p.id)+'&id=gt.'+since+'&select=id,from_user,kind,payload&order=id.asc&limit=100');
+  return json({items:rows});
  }
  if(action==='voice_list'){await member(b.channel_id);const rows=await db('/rest/v1/comunica_voice?channel_id=eq.'+encodeURIComponent(b.channel_id)+'&select=id,user_id,sender,created_at&order=id.desc&limit=25');return json({items:rows.reverse()})}
  if(action==='voice_send'){
