@@ -1,18 +1,12 @@
-MODOLOG COMUNICA V1.8.4 — PACOTE COMPLETO
+MODOLOG COMUNICA V1.8.5 — ZIP COMPLETO
 
-NOVIDADE: ATUALIZAÇÃO DO PWA SEM DESINSTALAR
-- Botão "Atualizar app" no cabeçalho.
-- Verificação de nova versão ao abrir, ao voltar do segundo plano, ao reconectar à internet e periodicamente com app visível.
-- Aviso "Atualizar agora" quando a versão publicada for diferente da instalada.
-- Atualização usa nova navegação e atualiza o Service Worker, preservando o login local.
-- Atualização bloqueada durante transmissão de áudio.
-- Novo version.json e sw.js com estratégia rede-primeiro e limpeza de caches antigos.
+Correções de retomada após bloqueio de tela e retorno do segundo plano:
+- Recria WebRTC e sinalização quando a página volta a ficar visível.
+- Detecta pausas prolongadas dos temporizadores.
+- Atualiza presença, convite individual e lista de usuários na retomada.
+- Mantém o polling de sinalização quando o navegador permitir execução em segundo plano.
+- Mantém atualização integrada do PWA, rádio direto e lista só de online.
 
-PUBLICAÇÃO
-Substitua TODOS os arquivos do projeto no GitHub, incluindo version.json e sw.js. Aguarde Cloudflare Pages concluir o deploy.
-No iPhone/Android, abra o app instalado e toque em "Atualizar app" (não desinstale).
-Na primeira atualização a partir de versões antigas, pode ser necessário fechar e abrir o PWA uma vez para carregar o novo botão.
+LIMITAÇÃO: iOS e Android suspendem PWAs em segundo plano. Esta versão melhora a reconexão quando a execução é retomada, mas não garante receber áudio continuamente com o app minimizado ou a tela apagada. Para isso é necessário avaliar aplicativos nativos e permissões/serviços específicos, especialmente no Android.
 
-PARA AS PRÓXIMAS VERSÕES: atualizar a constante APP_VERSION no index.html, o campo version em version.json e a constante CACHE no sw.js. Caso contrário, o aviso não identificará a versão nova.
-Não exige SQL.
-Observação: iOS e Android podem suspender WebRTC em segundo plano; esta atualização não resolve esse problema.
+Publicar todos os arquivos no GitHub/Cloudflare Pages. Não exige SQL novo.

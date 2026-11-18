@@ -76,8 +76,8 @@ async function start(){try{
  if(poll)clearInterval(poll);
  poll=setInterval(()=>{directDirectory().catch(()=>{});directIncoming().catch(()=>{});if(selected){directHeartbeat().catch(()=>{});checkPttStatus().catch(()=>{});rtcReconnect()}},4500);
  setInterval(()=>{if(selected&&audioEnabled)checkPttStatus().catch(()=>{})},500);
- document.addEventListener('visibilitychange',()=>{if(document.hidden){lastPageVisible=Date.now()}else{directDirectory().catch(()=>{});directIncoming().catch(()=>{});if(selected&&Date.now()-lastPageVisible>8000){rtcClose();rtcPersistentStart();directHeartbeat().catch(()=>{})}else rtcReconnect()}});
- window.addEventListener('pageshow',()=>{directDirectory().catch(()=>{});directIncoming().catch(()=>{});directHeartbeat().catch(()=>{});rtcReconnect()});
+ document.addEventListener('visibilitychange',()=>{if(document.hidden)lastPageVisible=Date.now()});
+ window.addEventListener('pageshow',e=>{if(e.persisted||Date.now()-lastPageVisible>3000)rtcResumeFromBackground('retorno à tela').catch(()=>{});else rtcReconnect()});
  }catch(e){if(/expirada|401|Login necessário|Credenciais/i.test(e.message)){localStorage.removeItem('mc_token');localStorage.removeItem('mc_refresh');sessionStorage.removeItem('mc_token');token=''}msg(e.message)}
 }
 async function refresh(){return directDirectory()}
@@ -113,10 +113,32 @@ function rtcConnectionIndicator(){
  el.textContent=connected?'🟢 Conectado a '+connected+' aparelho(s)'+(connecting?' · outros conectando':''):connecting?'🟡 Reconectando ('+connecting+')':'🟡 Canal ativo · aguardando outros aparelhos';
 }
 function rtcDropPeer(id,pc){if(rtcPeers.get(id)!==pc)return;rtcPeers.delete(id);rtcPendingIce.delete(id);rtcAudioLastBytes.delete(id);rtcAudioAckSent.delete(id);const a=rtcAudio.get(id);if(a){a.pause();a.srcObject=null;a.remove();rtcAudio.delete(id)}const node=rtcAudioNodes.get(id);if(node){try{node.disconnect()}catch{}}rtcAudioNodes.delete(id);try{pc.close()}catch{}rtcLiveCount=[...rtcPeers.values()].filter(p=>p.connectionState==='connected').length;rtcConnectionIndicator()}
+let rtcLastForegroundTick=Date.now(),rtcResumeBusy=false;
+async function rtcResumeFromBackground(reason='retorno'){
+ if(rtcResumeBusy||!me||!audioEnabled||!navigator.onLine)return;
+ rtcResumeBusy=true;
+ try{
+  await unlockAudio().catch(()=>{});
+  await directDirectory().catch(()=>{});
+  await directIncoming().catch(()=>{});
+  if(selected&&directPeer){
+   // O sistema pode ter congelado timers e invalidado o transporte ICE.
+   // Reiniciar a sessão local força nova sinalização sem exigir aceite.
+   rtcClose();rtcPersistentStart();
+   await directHeartbeat().catch(()=>{});
+   await api('direct_open',{to:directPeer}).catch(()=>{});
+   rtcPoll().catch(()=>{});rtcPresence().catch(()=>{});
+   $('pttStatus').textContent='Reconectando rádio após '+reason+'...';
+  }
+ }finally{rtcLastForegroundTick=Date.now();rtcResumeBusy=false}
+}
 function rtcReconnect(){if(!audioEnabled||!selected||!navigator.onLine)return;rtcPersistentStart();rtcPresence().catch(()=>{});rtcPoll().catch(()=>{});rtcConnectionIndicator()}
+// Detecta pausas longas dos temporizadores quando o aparelho volta da suspensão.
+setInterval(()=>{const now=Date.now(),gap=now-rtcLastForegroundTick;rtcLastForegroundTick=now;if(gap>11000&&document.visibilityState==='visible')rtcResumeFromBackground('suspensão').catch(()=>{})},3000);
 window.addEventListener('online',()=>{rtcNetworkOnline=true;rtcReconnect()});
 window.addEventListener('offline',()=>{rtcNetworkOnline=false;rtcConnectionIndicator()});
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')rtcReconnect()});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')rtcResumeFromBackground('segundo plano').catch(()=>{})});
+window.addEventListener('focus',()=>{if(document.visibilityState==='visible'&&Date.now()-lastPageVisible>3000)rtcResumeFromBackground('tela bloqueada').catch(()=>{})});
 async function rtcPresence(){
  if(rtcPresenceBusy||!selected||!me||!audioEnabled||!navigator.onLine)return;
  rtcPresenceBusy=true;
@@ -134,7 +156,7 @@ async function rtcPresence(){
   }
  }catch(e){rtcDiagnostics='Presença: '+e.message}finally{rtcPresenceBusy=false;rtcConnectionIndicator()}
 }
-function rtcPersistentStart(){if(!selected||!audioEnabled)return;if(rtcSession===selected&&rtcPollTimer)return;rtcClose();rtcSession=selected;rtcReceiver=true;rtcPollTimer=setInterval(()=>{if(navigator.onLine&&document.visibilityState==='visible')rtcPoll().catch(()=>{})},280);rtcPresenceTimer=setInterval(()=>rtcPresence().catch(()=>{}),2200);rtcPoll().catch(()=>{});rtcPresence().catch(()=>{});rtcConnectionIndicator()}
+function rtcPersistentStart(){if(!selected||!audioEnabled)return;if(rtcSession===selected&&rtcPollTimer)return;rtcClose();rtcSession=selected;rtcReceiver=true;rtcPollTimer=setInterval(()=>{if(navigator.onLine)rtcPoll().catch(()=>{})},280);rtcPresenceTimer=setInterval(()=>rtcPresence().catch(()=>{}),2200);rtcPoll().catch(()=>{});rtcPresence().catch(()=>{});rtcConnectionIndicator()}
 async function rtcSignal(to,kind,payload={}){if(!rtcSession||!selected)return;await api('rtc_signal',{channel_id:selected,session:selected,to,kind,payload});rtcDiagnostics='Sinal enviado: '+kind}
 let rtcDebugTimer=null;
 async function rtcDebugSnapshot(){
@@ -240,7 +262,7 @@ if(token)start();if('serviceWorker'in navigator)navigator.serviceWorker.register
 checkAppUpdate();
 
 // Atualização PWA: checagem de versão na rede, sem apagar dados de login.
-const APP_VERSION='1.8.4';
+const APP_VERSION='1.8.5';
 let updateAvailable=false,updateChecking=false,lastUpdateCheck=0;
 function updateNotice(show,txt){const el=$('updateNotice');if(!el)return;el.classList.toggle('hidden',!show);if(txt)$('updateNoticeText').textContent=txt;}
 async function checkAppUpdate(force=false){
