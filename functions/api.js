@@ -20,11 +20,45 @@ try{
  const token=(request.headers.get('Authorization')||'').replace(/^Bearer\s+/i,'');if(!token)return json({error:'Login necessário'},401);
  const auth=await fetch(url+'/auth/v1/user',{headers:{apikey:pub,Authorization:'Bearer '+token}});if(!auth.ok)return json({error:'Sessão expirada. Entre novamente.'},401);const user=await auth.json(),p=await identity(user.id);if(!p)return json({error:'Usuário sem permissão'},403);
  const admin=()=>{if(!p.admin)throw new Error('Somente administradores podem realizar esta ação')};
- const member=async id=>{const c=await db('/rest/v1/comunica_channels?id=eq.'+encodeURIComponent(id)+'&select=id,is_general');if(!c.length)throw Error('Canal inexistente');if(!c[0].is_general){const m=await db('/rest/v1/comunica_members?channel_id=eq.'+encodeURIComponent(id)+'&user_id=eq.'+encodeURIComponent(p.id)+'&select=user_id');if(!m.length&&!p.admin)throw Error('Sem acesso a este canal')}return c[0]};
+ const member=async id=>{const c=await db('/rest/v1/comunica_channels?id=eq.'+encodeURIComponent(id)+'&select=id,is_general');if(!c.length)throw Error('Canal inexistente');if(!c[0].is_general){const m=await db('/rest/v1/comunica_members?channel_id=eq.'+encodeURIComponent(id)+'&user_id=eq.'+encodeURIComponent(p.id)+'&select=user_id');if(!m.length)throw Error('Sem acesso a este canal')}return c[0]};
  if(action==='me')return json({user:p});
- if(action==='channels'){const cs=await db('/rest/v1/comunica_channels?select=id,name,is_general&order=created_at.asc');const ms=await db('/rest/v1/comunica_members?user_id=eq.'+encodeURIComponent(p.id)+'&select=channel_id');const allowed=new Set(ms.map(m=>m.channel_id));return json({channels:cs.filter(c=>p.admin||c.is_general||allowed.has(c.id))})}
- if(action==='messages'){await member(b.channel_id);const rows=await db('/rest/v1/comunica_messages?channel_id=eq.'+encodeURIComponent(b.channel_id)+'&select=id,user_id,sender,body,created_at&order=created_at.desc&limit=100');return json({messages:rows.reverse()})}
- if(action==='send'){await member(b.channel_id);const body=String(b.body||'').trim();if(!body||body.length>4000)throw Error('Mensagem inválida');await db('/rest/v1/comunica_messages','POST',{channel_id:b.channel_id,user_id:p.id,sender:p.name,body});return json({ok:true})}
+
+ // V1.8: contatos individuais, presença e convite de rádio direto.
+ const uuid=/^[0-9a-f-]{36}$/i;
+ if(action==='direct_directory'){
+  const beat=await fetch(url+'/rest/v1/comunica_user_presence?on_conflict=user_id',{method:'POST',headers:{...headers,Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({user_id:p.id,last_seen:new Date().toISOString()})});if(!beat.ok)throw Error('Presença: '+(await beat.text()).slice(0,150));
+  const [profiles,exclusive,online]=await Promise.all([
+   db('/rest/v1/modolog_profiles?active=eq.true&select=id,name'),
+   db('/rest/v1/comunica_users?active=eq.true&select=id,name'),
+   db('/rest/v1/comunica_user_presence?last_seen=gt.'+encodeURIComponent(new Date(Date.now()-16000).toISOString())+'&select=user_id')]);
+  const ids=new Set(online.map(x=>x.user_id));const users=new Map();
+  for(const u of [...profiles,...exclusive])if(u.id!==p.id)users.set(u.id,{id:u.id,name:u.name,online:ids.has(u.id)});
+  return json({users:[...users.values()].sort((a,b)=>Number(b.online)-Number(a.online)||a.name.localeCompare(b.name,'pt-BR'))});
+ }
+ if(action==='direct_open'){
+  const target=String(b.to||'');if(!uuid.test(target)||target===p.id)throw Error('Contato inválido');
+  const other=await identity(target);if(!other)throw Error('Usuário não está habilitado');
+  const pair=[p.id,target].sort().join(':');const hash=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('modolog-direct-v1:'+pair));
+  const h=[...new Uint8Array(hash)].slice(0,16).map(x=>x.toString(16).padStart(2,'0')).join('');
+  const channel=[h.slice(0,8),h.slice(8,12),'4'+h.slice(13,16),'8'+h.slice(17,20),h.slice(20,32)].join('-');
+  const ins=await fetch(url+'/rest/v1/comunica_channels?on_conflict=id',{method:'POST',headers:{...headers,Prefer:'resolution=ignore-duplicates,return=minimal'},body:JSON.stringify({id:channel,name:'Rádio individual',is_general:false,created_by:p.id})});
+  if(!ins.ok)throw Error('Canal individual: '+(await ins.text()).slice(0,150));
+  const members=await fetch(url+'/rest/v1/comunica_members?on_conflict=channel_id,user_id',{method:'POST',headers:{...headers,Prefer:'resolution=ignore-duplicates,return=minimal'},body:JSON.stringify([{channel_id:channel,user_id:p.id},{channel_id:channel,user_id:target}])});
+  if(!members.ok)throw Error('Participantes: '+(await members.text()).slice(0,150));
+  const inv=await fetch(url+'/rest/v1/comunica_direct_invites?on_conflict=recipient_id',{method:'POST',headers:{...headers,Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({recipient_id:target,caller_id:p.id,channel_id:channel,updated_at:new Date().toISOString()})});
+  if(!inv.ok)throw Error('Convite: '+(await inv.text()).slice(0,150));
+  return json({channel_id:channel,name:other.name});
+ }
+ if(action==='direct_incoming'){
+  const rows=await db('/rest/v1/comunica_direct_invites?recipient_id=eq.'+encodeURIComponent(p.id)+'&updated_at=gt.'+encodeURIComponent(new Date(Date.now()-18000).toISOString())+'&select=channel_id,caller_id,updated_at');
+  if(!rows.length)return json({incoming:null});
+  const caller=await identity(rows[0].caller_id);
+  return json({incoming:caller?{channel_id:rows[0].channel_id,caller_id:caller.id,name:caller.name,updated_at:rows[0].updated_at}:null});
+ }
+
+ if(action==='channels_disabled'){const cs=await db('/rest/v1/comunica_channels?select=id,name,is_general&order=created_at.asc');const ms=await db('/rest/v1/comunica_members?user_id=eq.'+encodeURIComponent(p.id)+'&select=channel_id');const allowed=new Set(ms.map(m=>m.channel_id));return json({channels:cs.filter(c=>p.admin||c.is_general||allowed.has(c.id))})}
+ if(action==='messages_disabled'){await member(b.channel_id);const rows=await db('/rest/v1/comunica_messages?channel_id=eq.'+encodeURIComponent(b.channel_id)+'&select=id,user_id,sender,body,created_at&order=created_at.desc&limit=100');return json({messages:rows.reverse()})}
+ if(action==='send_disabled'){await member(b.channel_id);const body=String(b.body||'').trim();if(!body||body.length>4000)throw Error('Mensagem inválida');await db('/rest/v1/comunica_messages','POST',{channel_id:b.channel_id,user_id:p.id,sender:p.name,body});return json({ok:true})}
 
  if(action==='ptt_status'){
   await member(b.channel_id);
@@ -94,7 +128,7 @@ try{
   const r=await fetch(url+'/storage/v1/object/sign/comunica-voice/'+rows[0].path,{method:'POST',headers,body:JSON.stringify({expiresIn:60})});
   if(!r.ok)throw Error('Não foi possível abrir o áudio');const x=await r.json();return json({url:url+'/storage/v1'+x.signedURL});
  }
- if(action==='create_channel'){admin();const name=String(b.name||'').trim();if(name.length<3||name.length>100)throw Error('Informe um nome entre 3 e 100 caracteres');await db('/rest/v1/comunica_channels','POST',{name,is_general:false,created_by:p.id});return json({ok:true})}
+ if(action==='create_channel_disabled'){admin();const name=String(b.name||'').trim();if(name.length<3||name.length>100)throw Error('Informe um nome entre 3 e 100 caracteres');await db('/rest/v1/comunica_channels','POST',{name,is_general:false,created_by:p.id});return json({ok:true})}
  if(action==='create_user'){admin();const name=String(b.name||'').trim(),email=String(b.email||'').trim().toLowerCase(),password=String(b.password||'');if(!name||!email.includes('@')||password.length<8)throw Error('Nome, e-mail e senha de 8 caracteres são obrigatórios');const r=await fetch(url+'/auth/v1/admin/users',{method:'POST',headers,body:JSON.stringify({email,password,email_confirm:true,user_metadata:{name}})});const u=await r.json();if(!r.ok)throw Error(u.msg||u.message||'Falha ao criar usuário');try{await db('/rest/v1/comunica_users','POST',{id:u.id,name,email,role:'operador',active:true})}catch(e){await fetch(url+'/auth/v1/admin/users/'+encodeURIComponent(u.id),{method:'DELETE',headers});throw e}return json({ok:true})}
  return json({error:'Ação desconhecida'},400);
 }catch(e){return json({error:e.message||'Erro inesperado'},400)}
