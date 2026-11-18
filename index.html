@@ -25,7 +25,8 @@ function activateReception(){audioEnabled=true;rtcPersistentStart();rtcConnectio
 async function directDirectory(){
  if(!me||directDirectoryBusy)return;directDirectoryBusy=true;
  try{const r=await api('direct_directory');directContacts=r.users||[];
-  $('directUsers').innerHTML=directContacts.map(u=>`<button data-contact="${escapeHtml(u.id)}" style="background:${u.id===directPeer?'#e97713':'#555d61'}">${u.online?'🟢':'⚪'} ${escapeHtml(u.name)} · ${u.online?'Online':'Offline'}</button>`).join('')||'<p>Nenhum outro usuário cadastrado.</p>';
+  const onlineContacts=directContacts.filter(u=>u.online);
+  $('directUsers').innerHTML=onlineContacts.map(u=>`<button data-contact="${escapeHtml(u.id)}" style="background:${u.id===directPeer?'#e97713':'#555d61'}">${escapeHtml(u.name)}</button>`).join('')||'<p>Nenhum outro usuário disponível no momento.</p>';
  }catch(e){console.warn('Lista de usuários:',e)}finally{directDirectoryBusy=false}
 }
 async function directSelect(id,channel,name){

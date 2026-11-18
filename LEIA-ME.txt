@@ -1,11 +1,12 @@
-MODOLOG COMUNICA V1.8.0 — RÁDIO INDIVIDUAL
+MODOLOG COMUNICA V1.8.1 — PACOTE COMPLETO
 
-1. Execute SQL_COMUNICA_V1_8.sql no Supabase uma única vez.
-2. Publique TODO o conteúdo deste ZIP no repositório GitHub/Cloudflare Pages.
-3. Abra em dois aparelhos, faça login, selecione o usuário online e segure FALAR.
-4. O destinatário recebe a comunicação automaticamente, sem aceitar.
+Alterações:
+- A lista de comunicação mostra somente usuários identificados como online pela API.
+- Os botões exibem apenas o nome do usuário, sem ícones ou texto de status.
+- Quando ninguém estiver online, aparece uma mensagem informativa.
+- Comunicação individual, login permanente e WebRTC mantidos.
 
-A lista online é atualizada por heartbeat (até cerca de 16 segundos para indicar offline).
-A versão web pode ser suspensa pelo sistema em segundo plano; ao retornar, tenta reconectar.
-Os canais e mensagens antigos permanecem armazenados no banco, mas não são exibidos na interface.
-Não há envio de gravação. Teste em aparelhos reais antes de uso operacional.
+Observação: o funcionamento contínuo com o app minimizado depende das restrições do Android/iOS. Esta versão não resolve essa limitação.
+
+Instalação: substituir os arquivos no GitHub e aguardar a publicação do Cloudflare Pages.
+Não exige SQL novo.
