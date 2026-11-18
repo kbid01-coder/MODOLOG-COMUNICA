@@ -1,8 +1,5 @@
-MODOLOG COMUNICA V1.8.6 — ZIP COMPLETO
+MODOLOG COMUNICA V1.8.7 - ICONE IPHONE
 
-Ícones atualizados com escavadeira sem lâmina frontal puxando a antena do rádio, fundo cinza médio e marca MODOLOG.
-Mantido todo o código da V1.8.5, sem alterações de comunicação.
-Cache do service worker atualizado para v1.8.6.
+Inclui apple-touch-icon 180x180 com URL exclusiva para iOS e atualiza manifest e versao de cache. Nenhuma alteracao na comunicacao.
 
-Publique todo o conteúdo na raiz do repositório GitHub/Cloudflare Pages. Não exige SQL.
-Observação: no Android, o ícone instalado pode ser retido pelo launcher; tente atualizar o app e reiniciar o launcher antes de reinstalar.
+Publique todos os arquivos no GitHub/Cloudflare Pages. No iPhone, o icone da tela inicial pode permanecer em cache mesmo com o site atualizado; se isso ocorrer, remova SOMENTE o atalho da tela inicial e adicione novamente pelo Safari. Nao apague dados do Safari nem a conta. O login pode precisar ser refeito caso o atalho seja removido.
