@@ -49,8 +49,28 @@ try{
   if(!inv.ok)throw Error('Convite: '+(await inv.text()).slice(0,150));
   return json({channel_id:channel,name:other.name});
  }
+ if(action==='direct_heartbeat'){
+  const channel=String(b.channel_id||''),peer=String(b.peer_id||'');
+  if(!uuid.test(channel)||!uuid.test(peer)||peer===p.id)throw Error('Conversa inválida');
+  await member(channel);
+  // Só renova convites enviados por este operador, sem criar convites no sentido inverso.
+  const rows=await db('/rest/v1/comunica_direct_invites?recipient_id=eq.'+encodeURIComponent(peer)+'&caller_id=eq.'+encodeURIComponent(p.id)+'&channel_id=eq.'+encodeURIComponent(channel)+'&select=recipient_id');
+  if(rows.length)await db('/rest/v1/comunica_direct_invites?recipient_id=eq.'+encodeURIComponent(peer)+'&caller_id=eq.'+encodeURIComponent(p.id)+'&channel_id=eq.'+encodeURIComponent(channel),'PATCH',{updated_at:new Date().toISOString()});
+  return json({ok:true});
+ }
+ if(action==='direct_leave'){
+  const channel=String(b.channel_id||''),peer=String(b.peer_id||'');
+  if(!uuid.test(channel)||!uuid.test(peer)||peer===p.id)throw Error('Conversa inválida');
+  await member(channel);
+  // Remove o convite em qualquer direção, evitando reabertura involuntária após Voltar.
+  for(const [caller,recipient] of [[p.id,peer],[peer,p.id]]){
+   await db('/rest/v1/comunica_direct_invites?caller_id=eq.'+encodeURIComponent(caller)+'&recipient_id=eq.'+encodeURIComponent(recipient)+'&channel_id=eq.'+encodeURIComponent(channel),'DELETE');
+  }
+  await db('/rest/v1/comunica_rtc_presence?channel_id=eq.'+encodeURIComponent(channel)+'&user_id=eq.'+encodeURIComponent(p.id),'DELETE');
+  return json({ok:true});
+ }
  if(action==='direct_incoming'){
-  const rows=await db('/rest/v1/comunica_direct_invites?recipient_id=eq.'+encodeURIComponent(p.id)+'&updated_at=gt.'+encodeURIComponent(new Date(Date.now()-18000).toISOString())+'&select=channel_id,caller_id,updated_at');
+  const rows=await db('/rest/v1/comunica_direct_invites?recipient_id=eq.'+encodeURIComponent(p.id)+'&updated_at=gt.'+encodeURIComponent(new Date(Date.now()-16000).toISOString())+'&select=channel_id,caller_id,updated_at');
   if(!rows.length)return json({incoming:null});
   const caller=await identity(rows[0].caller_id);
   return json({incoming:caller?{channel_id:rows[0].channel_id,caller_id:caller.id,name:caller.name,updated_at:rows[0].updated_at}:null});

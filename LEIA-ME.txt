@@ -1,11 +1,12 @@
-MODOLOG COMUNICA V1.8.2 — ZIP COMPLETO
+MODOLOG COMUNICA V1.8.3 — ZIP COMPLETO
 
-- Botão “Voltar aos usuários” na comunicação individual.
-- Ao voltar, encerra a sessão WebRTC local, libera a seleção do contato e retorna à lista.
-- O botão FALAR fica desativado até escolher outro usuário.
-- Não interrompe uma transmissão ativa: solicita soltar FALAR antes de voltar.
-- Ignora por 20 segundos um convite recente da mesma conversa para evitar retorno automático ao contato encerrado.
+Correções:
+- Rádio direto sem aceite: um usuário abre o contato e o outro recebe automaticamente.
+- Enquanto a conversa estiver aberta, o convite é renovado para permitir reconexão.
+- Voltar encerra a conversa e remove convites antigos e presença WebRTC local.
+- Reentrada após Voltar inicia novo convite e negociação.
+- Mantida lista apenas com nomes de usuários online, login permanente e transmissão ao vivo.
 
-Mantidos: login permanente, lista somente com usuários online, rádio direto sem chat.
-
-Publicação: substituir arquivos no GitHub e aguardar Cloudflare Pages. Não exige SQL.
+Substitua os arquivos no GitHub, incluindo functions/api.js.
+Não exige SQL adicional à V1.8.
+A comunicação com app suspenso em segundo plano ainda depende do navegador/sistema.

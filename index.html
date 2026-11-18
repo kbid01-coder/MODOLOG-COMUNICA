@@ -7,7 +7,7 @@
 
 <section id="users" class="card tab hidden"><h2>Usuários exclusivos do COMUNICA</h2><p class="muted">Esses usuários não recebem perfil no Checklist. A segurança dos outros aplicativos deve ser validada separadamente.</p><form id="userForm"><label>Nome<input id="newName" required></label><label>E-mail<input id="newEmail" type="email" required></label><label>Senha inicial<input id="newPassword" type="password" minlength="8" required></label><button>Cadastrar usuário exclusivo</button></form><div id="userList"></div></section>
 </section></main><script>
-const $=id=>document.getElementById(id);let token=localStorage.getItem('mc_token')||sessionStorage.getItem('mc_token')||'',me=null,channels=[],selected=null,poll=null,recorder=null,recordParts=[],recordStarted=0,audioEnabled=false,lastVoiceId=0,voiceChannel=null,voiceBusy=false,recordStream=null,pttLease=null,pttChannelLock=null,pressPending=false,pttSending=false,voiceQueue=[],lastStatusCheck=0,leaseHeartbeat=null,pttStopTimer=null,voiceCheckPending=false,pttStatusPending=false;function msg(t){$('alert').textContent=t;$('alert').classList.remove('hidden')}function clearMsg(){$('alert').classList.add('hidden')}function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}let lastPageVisible=Date.now();let refreshInFlight=null,directContacts=[],directPeer=null,directDirectoryBusy=false,directIncomingBusy=false,lastIncomingStamp='',ignoredIncoming=null;async function refreshSession(){
+const $=id=>document.getElementById(id);let token=localStorage.getItem('mc_token')||sessionStorage.getItem('mc_token')||'',me=null,channels=[],selected=null,poll=null,recorder=null,recordParts=[],recordStarted=0,audioEnabled=false,lastVoiceId=0,voiceChannel=null,voiceBusy=false,recordStream=null,pttLease=null,pttChannelLock=null,pressPending=false,pttSending=false,voiceQueue=[],lastStatusCheck=0,leaseHeartbeat=null,pttStopTimer=null,voiceCheckPending=false,pttStatusPending=false;function msg(t){$('alert').textContent=t;$('alert').classList.remove('hidden')}function clearMsg(){$('alert').classList.add('hidden')}function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}let lastPageVisible=Date.now();let refreshInFlight=null,directContacts=[],directPeer=null,directDirectoryBusy=false,directIncomingBusy=false,lastIncomingStamp='',ignoredIncoming=null,directHeartbeatBusy=false;async function refreshSession(){
  if(refreshInFlight)return refreshInFlight;
  const rt=localStorage.getItem('mc_refresh');if(!rt)throw Error('Sessão expirada. Entre novamente.');
  refreshInFlight=(async()=>{const r=await fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'refresh_session',refresh_token:rt})});const j=await r.json();if(!r.ok)throw Error(j.error||'Sessão expirada');token=j.access_token;localStorage.setItem('mc_token',token);localStorage.setItem('mc_refresh',j.refresh_token);return token})();
@@ -33,7 +33,7 @@ async function directSelect(id,channel,name){
  if(recorder||pressPending)return;
  if(!channel){const r=await api('direct_open',{to:id});channel=r.channel_id;name=r.name}
  directPeer=id;
- ignoredIncoming=null;
+ ignoredIncoming=null;lastIncomingStamp='';
  $('directConversation').classList.remove('hidden');
  if(selected!==channel){rtcClose();selected=channel;voiceChannel=channel;rtcLastBusy=false;rtcPersistentStart()}
  $('pttChannel').textContent=name||directContacts.find(u=>u.id===id)?.name||'Usuário';
@@ -42,10 +42,12 @@ async function directSelect(id,channel,name){
  directDirectory().catch(()=>{});
  rtcReconnect();
 }
-function directBack(){
+async function directBack(){
  if(recorder||pressPending||pttSending){msg('Solte FALAR e aguarde o encerramento da transmissão.');return}
- if(directPeer&&selected)ignoredIncoming={caller:directPeer,channel:selected,until:Date.now()+20000};
+ const oldPeer=directPeer,oldChannel=selected;
+ ignoredIncoming=null;lastIncomingStamp='';
  rtcClose();selected=null;voiceChannel=null;directPeer=null;rtcLastBusy=false;
+ if(oldPeer&&oldChannel)api('direct_leave',{channel_id:oldChannel,peer_id:oldPeer}).catch(e=>console.warn('Saída do canal:',e));
  $('pttButton').disabled=true;
  $('directConversation').classList.add('hidden');
  $('pttChannel').textContent='Selecione um usuário';
@@ -62,16 +64,20 @@ async function directIncoming(){
  }
  }catch(e){console.warn('Rádio direto:',e)}finally{directIncomingBusy=false}
 }
+async function directHeartbeat(){
+ if(!me||!selected||!directPeer||directHeartbeatBusy)return;directHeartbeatBusy=true;
+ try{await api('direct_heartbeat',{channel_id:selected,peer_id:directPeer})}catch(e){console.warn('Presença do rádio:',e)}finally{directHeartbeatBusy=false}
+}
 async function start(){try{
  const r=await api('me');me=r.user;
  $('login').classList.add('hidden');$('app').classList.remove('hidden');$('logout').classList.remove('hidden');$('who').textContent=`${me.name} · ${me.role}`;
  if(me.admin)$('adminTab').classList.remove('hidden');
  $('pttButton').disabled=true;activateReception();await directDirectory();await directIncoming();
  if(poll)clearInterval(poll);
- poll=setInterval(()=>{directDirectory().catch(()=>{});directIncoming().catch(()=>{});if(selected){checkPttStatus().catch(()=>{});rtcReconnect()}},4500);
+ poll=setInterval(()=>{directDirectory().catch(()=>{});directIncoming().catch(()=>{});if(selected){directHeartbeat().catch(()=>{});checkPttStatus().catch(()=>{});rtcReconnect()}},4500);
  setInterval(()=>{if(selected&&audioEnabled)checkPttStatus().catch(()=>{})},500);
- document.addEventListener('visibilitychange',()=>{if(document.hidden){lastPageVisible=Date.now()}else{directDirectory().catch(()=>{});directIncoming().catch(()=>{});if(selected&&Date.now()-lastPageVisible>8000){rtcClose();rtcPersistentStart()}else rtcReconnect()}});
- window.addEventListener('pageshow',()=>{directDirectory().catch(()=>{});directIncoming().catch(()=>{});rtcReconnect()});
+ document.addEventListener('visibilitychange',()=>{if(document.hidden){lastPageVisible=Date.now()}else{directDirectory().catch(()=>{});directIncoming().catch(()=>{});if(selected&&Date.now()-lastPageVisible>8000){rtcClose();rtcPersistentStart();directHeartbeat().catch(()=>{})}else rtcReconnect()}});
+ window.addEventListener('pageshow',()=>{directDirectory().catch(()=>{});directIncoming().catch(()=>{});directHeartbeat().catch(()=>{});rtcReconnect()});
  }catch(e){if(/expirada|401|Login necessário|Credenciais/i.test(e.message)){localStorage.removeItem('mc_token');localStorage.removeItem('mc_refresh');sessionStorage.removeItem('mc_token');token=''}msg(e.message)}
 }
 async function refresh(){return directDirectory()}
