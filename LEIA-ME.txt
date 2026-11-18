@@ -1,12 +1,11 @@
-MODOLOG COMUNICA V1.8.1 — PACOTE COMPLETO
+MODOLOG COMUNICA V1.8.2 — ZIP COMPLETO
 
-Alterações:
-- A lista de comunicação mostra somente usuários identificados como online pela API.
-- Os botões exibem apenas o nome do usuário, sem ícones ou texto de status.
-- Quando ninguém estiver online, aparece uma mensagem informativa.
-- Comunicação individual, login permanente e WebRTC mantidos.
+- Botão “Voltar aos usuários” na comunicação individual.
+- Ao voltar, encerra a sessão WebRTC local, libera a seleção do contato e retorna à lista.
+- O botão FALAR fica desativado até escolher outro usuário.
+- Não interrompe uma transmissão ativa: solicita soltar FALAR antes de voltar.
+- Ignora por 20 segundos um convite recente da mesma conversa para evitar retorno automático ao contato encerrado.
 
-Observação: o funcionamento contínuo com o app minimizado depende das restrições do Android/iOS. Esta versão não resolve essa limitação.
+Mantidos: login permanente, lista somente com usuários online, rádio direto sem chat.
 
-Instalação: substituir os arquivos no GitHub e aguardar a publicação do Cloudflare Pages.
-Não exige SQL novo.
+Publicação: substituir arquivos no GitHub e aguardar Cloudflare Pages. Não exige SQL.

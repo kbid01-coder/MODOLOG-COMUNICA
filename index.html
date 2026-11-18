@@ -3,11 +3,11 @@
 <header><div><b>MODOLOG</b><small>SERVIÇOS E LOCAÇÕES · COMUNICA</small></div><button id="logout" class="secondary hidden">Sair</button></header><main><div id="alert" class="status hidden"></div><section id="login" class="card"><h2>Entrar no MODOLOG COMUNICA</h2><form id="loginForm"><label>E-mail<input id="email" type="email" required autocomplete="username"></label><label>Senha<input id="password" type="password" required autocomplete="current-password"></label><button>Entrar</button></form><p class="muted">Utilize suas credenciais MODOLOG. Usuários exclusivos têm acesso apenas ao COMUNICA.</p></section>
 <section id="app" class="hidden"><div class="card"><strong id="who"></strong><p class="muted">Rádio direto entre usuários · comunicação exclusivamente ao vivo.</p></div><nav><button data-tab="ptt">Rádio direto</button><button data-tab="users" id="adminTab" class="hidden">Usuários</button></nav>
 <section id="chat" class="card tab hidden" style="display:none"><h2>Conversas e canais</h2><div class="layout"><div><div id="channels" class="list"></div><div id="channelAdmin" class="hidden"><h3>Novo canal</h3><input id="channelName" placeholder="Nome da obra ou grupo"><button id="createChannel">Criar canal</button></div></div><div><h3 id="channelTitle">Selecione um canal</h3><div id="messages" class="messages"></div><form id="messageForm"><textarea id="messageText" placeholder="Escreva uma mensagem" rows="2" maxlength="4000" required></textarea><button>Enviar mensagem</button></form></div></div></section>
-<section id="ptt" class="card tab"><h2>Rádio direto</h2><h3>Usuários</h3><div id="directUsers" class="list" aria-live="polite">Carregando usuários...</div><p>Comunicação com: <strong id="pttChannel">Selecione um usuário</strong></p><p id="rtcConnectionStatus" class="status" role="status" aria-live="polite">⚪ Recepção desativada</p><p class="status">Comunicação individual ao vivo. A reconexão depende das permissões do navegador em segundo plano.</p><p id="pttStatus" aria-live="polite">Recepção desativada</p><button id="pttButton" type="button">🎙 SEGURE PARA FALAR</button><audio id="pttAudio" playsinline></audio><details style="margin-top:12px"><summary>Diagnóstico WebRTC V1.6.0</summary><pre id="rtcDebug" style="white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px">Aguardando transmissão</pre></details></section>
+<section id="ptt" class="card tab"><h2>Rádio direto</h2><h3>Usuários</h3><div id="directUsers" class="list" aria-live="polite">Carregando usuários...</div><div id="directConversation" class="hidden"><p>Comunicação com: <strong id="pttChannel">Selecione um usuário</strong></p><button id="directBack" type="button" class="secondary">← Voltar aos usuários</button></div><p id="rtcConnectionStatus" class="status" role="status" aria-live="polite">⚪ Recepção desativada</p><p class="status">Comunicação individual ao vivo. A reconexão depende das permissões do navegador em segundo plano.</p><p id="pttStatus" aria-live="polite">Recepção desativada</p><button id="pttButton" type="button">🎙 SEGURE PARA FALAR</button><audio id="pttAudio" playsinline></audio><details style="margin-top:12px"><summary>Diagnóstico WebRTC V1.6.0</summary><pre id="rtcDebug" style="white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px">Aguardando transmissão</pre></details></section>
 
 <section id="users" class="card tab hidden"><h2>Usuários exclusivos do COMUNICA</h2><p class="muted">Esses usuários não recebem perfil no Checklist. A segurança dos outros aplicativos deve ser validada separadamente.</p><form id="userForm"><label>Nome<input id="newName" required></label><label>E-mail<input id="newEmail" type="email" required></label><label>Senha inicial<input id="newPassword" type="password" minlength="8" required></label><button>Cadastrar usuário exclusivo</button></form><div id="userList"></div></section>
 </section></main><script>
-const $=id=>document.getElementById(id);let token=localStorage.getItem('mc_token')||sessionStorage.getItem('mc_token')||'',me=null,channels=[],selected=null,poll=null,recorder=null,recordParts=[],recordStarted=0,audioEnabled=false,lastVoiceId=0,voiceChannel=null,voiceBusy=false,recordStream=null,pttLease=null,pttChannelLock=null,pressPending=false,pttSending=false,voiceQueue=[],lastStatusCheck=0,leaseHeartbeat=null,pttStopTimer=null,voiceCheckPending=false,pttStatusPending=false;function msg(t){$('alert').textContent=t;$('alert').classList.remove('hidden')}function clearMsg(){$('alert').classList.add('hidden')}function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}let lastPageVisible=Date.now();let refreshInFlight=null,directContacts=[],directPeer=null,directDirectoryBusy=false,directIncomingBusy=false,lastIncomingStamp='';async function refreshSession(){
+const $=id=>document.getElementById(id);let token=localStorage.getItem('mc_token')||sessionStorage.getItem('mc_token')||'',me=null,channels=[],selected=null,poll=null,recorder=null,recordParts=[],recordStarted=0,audioEnabled=false,lastVoiceId=0,voiceChannel=null,voiceBusy=false,recordStream=null,pttLease=null,pttChannelLock=null,pressPending=false,pttSending=false,voiceQueue=[],lastStatusCheck=0,leaseHeartbeat=null,pttStopTimer=null,voiceCheckPending=false,pttStatusPending=false;function msg(t){$('alert').textContent=t;$('alert').classList.remove('hidden')}function clearMsg(){$('alert').classList.add('hidden')}function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}let lastPageVisible=Date.now();let refreshInFlight=null,directContacts=[],directPeer=null,directDirectoryBusy=false,directIncomingBusy=false,lastIncomingStamp='',ignoredIncoming=null;async function refreshSession(){
  if(refreshInFlight)return refreshInFlight;
  const rt=localStorage.getItem('mc_refresh');if(!rt)throw Error('Sessão expirada. Entre novamente.');
  refreshInFlight=(async()=>{const r=await fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'refresh_session',refresh_token:rt})});const j=await r.json();if(!r.ok)throw Error(j.error||'Sessão expirada');token=j.access_token;localStorage.setItem('mc_token',token);localStorage.setItem('mc_refresh',j.refresh_token);return token})();
@@ -33,6 +33,8 @@ async function directSelect(id,channel,name){
  if(recorder||pressPending)return;
  if(!channel){const r=await api('direct_open',{to:id});channel=r.channel_id;name=r.name}
  directPeer=id;
+ ignoredIncoming=null;
+ $('directConversation').classList.remove('hidden');
  if(selected!==channel){rtcClose();selected=channel;voiceChannel=channel;rtcLastBusy=false;rtcPersistentStart()}
  $('pttChannel').textContent=name||directContacts.find(u=>u.id===id)?.name||'Usuário';
  $('pttStatus').textContent='Preparando comunicação individual...';
@@ -40,10 +42,22 @@ async function directSelect(id,channel,name){
  directDirectory().catch(()=>{});
  rtcReconnect();
 }
+function directBack(){
+ if(recorder||pressPending||pttSending){msg('Solte FALAR e aguarde o encerramento da transmissão.');return}
+ if(directPeer&&selected)ignoredIncoming={caller:directPeer,channel:selected,until:Date.now()+20000};
+ rtcClose();selected=null;voiceChannel=null;directPeer=null;rtcLastBusy=false;
+ $('pttButton').disabled=true;
+ $('directConversation').classList.add('hidden');
+ $('pttChannel').textContent='Selecione um usuário';
+ $('pttStatus').textContent='Selecione um usuário para conversar';
+ directDirectory().catch(()=>{});
+}
+$('directBack').onclick=directBack;
 async function directIncoming(){
  if(!me||directIncomingBusy)return;directIncomingBusy=true;
  try{const r=await api('direct_incoming'),v=r.incoming;
  if(v&&v.updated_at!==lastIncomingStamp){lastIncomingStamp=v.updated_at;
+  if(ignoredIncoming&&ignoredIncoming.caller===v.caller_id&&ignoredIncoming.channel===v.channel_id&&Date.now()<ignoredIncoming.until)return;
   if(v.caller_id!==directPeer||v.channel_id!==selected){await directSelect(v.caller_id,v.channel_id,v.name);beep(680,90)}
  }
  }catch(e){console.warn('Rádio direto:',e)}finally{directIncomingBusy=false}
