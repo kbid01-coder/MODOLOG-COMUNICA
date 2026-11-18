@@ -1,12 +1,18 @@
-MODOLOG COMUNICA V1.8.3 — ZIP COMPLETO
+MODOLOG COMUNICA V1.8.4 — PACOTE COMPLETO
 
-Correções:
-- Rádio direto sem aceite: um usuário abre o contato e o outro recebe automaticamente.
-- Enquanto a conversa estiver aberta, o convite é renovado para permitir reconexão.
-- Voltar encerra a conversa e remove convites antigos e presença WebRTC local.
-- Reentrada após Voltar inicia novo convite e negociação.
-- Mantida lista apenas com nomes de usuários online, login permanente e transmissão ao vivo.
+NOVIDADE: ATUALIZAÇÃO DO PWA SEM DESINSTALAR
+- Botão "Atualizar app" no cabeçalho.
+- Verificação de nova versão ao abrir, ao voltar do segundo plano, ao reconectar à internet e periodicamente com app visível.
+- Aviso "Atualizar agora" quando a versão publicada for diferente da instalada.
+- Atualização usa nova navegação e atualiza o Service Worker, preservando o login local.
+- Atualização bloqueada durante transmissão de áudio.
+- Novo version.json e sw.js com estratégia rede-primeiro e limpeza de caches antigos.
 
-Substitua os arquivos no GitHub, incluindo functions/api.js.
-Não exige SQL adicional à V1.8.
-A comunicação com app suspenso em segundo plano ainda depende do navegador/sistema.
+PUBLICAÇÃO
+Substitua TODOS os arquivos do projeto no GitHub, incluindo version.json e sw.js. Aguarde Cloudflare Pages concluir o deploy.
+No iPhone/Android, abra o app instalado e toque em "Atualizar app" (não desinstale).
+Na primeira atualização a partir de versões antigas, pode ser necessário fechar e abrir o PWA uma vez para carregar o novo botão.
+
+PARA AS PRÓXIMAS VERSÕES: atualizar a constante APP_VERSION no index.html, o campo version em version.json e a constante CACHE no sw.js. Caso contrário, o aviso não identificará a versão nova.
+Não exige SQL.
+Observação: iOS e Android podem suspender WebRTC em segundo plano; esta atualização não resolve esse problema.
